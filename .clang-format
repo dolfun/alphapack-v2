@@ -1,0 +1,20 @@
+BasedOnStyle: Google
+ColumnLimit: 100
+
+IndentWidth: 2
+ContinuationIndentWidth: 2
+AccessModifierOffset: -2
+
+SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
+
+BinPackArguments: false
+AllowAllArgumentsOnNextLine: false
+
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+AlignAfterOpenBracket: BlockIndent
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Empty
