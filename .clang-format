@@ -5,7 +5,7 @@ IndentWidth: 2
 ContinuationIndentWidth: 2
 AccessModifierOffset: -2
 
-SpaceBeforeCpp11BracedList: true
+SpaceBeforeCpp11BracedList: false
 Cpp11BracedListStyle: false
 
 BinPackArguments: false
@@ -18,3 +18,5 @@ AlignAfterOpenBracket: BlockIndent
 
 AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: Empty
+
+LambdaBodyIndentation: OuterScope
