@@ -1,5 +1,6 @@
-add_library(mcts ndarray.h state.h state.cc)
-target_compile_features(mcts PRIVATE cxx_std_23)
+add_library(mcts ndarray.h item.h state.h state.cc)
+target_compile_features(mcts PUBLIC cxx_std_23)
+target_include_directories(mcts PUBLIC .)
 
 if(MSVC)
   target_compile_options(mcts PRIVATE /W4 /WX)
