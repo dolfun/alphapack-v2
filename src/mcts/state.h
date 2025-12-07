@@ -65,8 +65,8 @@ State::State(const ItemRange& items) {
   }
 
   std::ranges::for_each(items, [](const Item& item) {
-    if (item.shape.x == 0 || item.shape.y == 0 || item.shape.z == 0 || item.shape.x > bin_length ||
-        item.shape.y > bin_length || item.shape.z > bin_height || item.placed) {
+    if (item.volume() == 0 || item.shape.x > bin_length || item.shape.y > bin_length ||
+        item.shape.z > bin_height || item.placed) {
       throw std::runtime_error(
         std::format(
           "Invalid item in constructor: shape({}, {}, {}), placed({})",

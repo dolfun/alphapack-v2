@@ -16,10 +16,6 @@ public:
 
   constexpr NdArray() = default;
 
-  constexpr explicit NdArray(T val) noexcept {
-    m_data.fill(val);
-  }
-
   template <typename... Indices>
     requires(sizeof...(Indices) == ndims && (std::is_integral_v<Indices> && ...))
   [[nodiscard]] constexpr auto operator[](this auto&& self, Indices... indices) noexcept
@@ -61,5 +57,12 @@ private:
     return ((static_cast<size_t>(indices) * strides[Is]) + ...);
   }
 };
+
+template <typename T, size_t... Dimensions>
+constexpr inline auto make_ndarray(T val = {}) {
+  NdArray<T, Dimensions...> arr{};
+  arr.fill(val);
+  return arr;
+}
 
 }  // namespace mcts

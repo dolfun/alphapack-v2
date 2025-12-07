@@ -88,7 +88,9 @@ auto State::transition(Action action_idx) noexcept -> float {
 
   update_feasibility_info(m_items.front());
 
-  auto used_items_count = std::ranges::count(m_items, true, &Item::placed);
+  auto used_items_count = std::ranges::count(m_items, true, [](const Item& item) {
+    return item.volume() > 0 && item.placed;
+  });
   auto reward_scaling = max_item_count * (max_item_count + 1) / 2;
   float reward = static_cast<float>(used_items_count) / reward_scaling;
   return reward;
