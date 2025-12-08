@@ -2,3 +2,9 @@
 /.vscode/
 /build/
 /venv/
+
+__pycache__/
+*.pyi
+*.pyd
+*.ilk
+*.pdb
