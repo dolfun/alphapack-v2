@@ -10,19 +10,23 @@ using namespace mcts;
 TEST_CASE("NdArray: Compile-time properties", "[NdArray][Static]") {
   SECTION("1D Array properties") {
     using Array1D = NdArray<int, 5>;
-    STATIC_REQUIRE(Array1D::ndims == 1);
+    STATIC_REQUIRE(Array1D::ndim == 1);
     STATIC_REQUIRE(Array1D::size == 5);
-    STATIC_REQUIRE(Array1D::bytes == 5 * sizeof(int));
-    STATIC_REQUIRE(Array1D::dims[0] == 5);
+    STATIC_REQUIRE(Array1D::nbytes == 5 * sizeof(int));
+    STATIC_REQUIRE(Array1D::shape[0] == 5);
+    STATIC_REQUIRE(Array1D::strides[0] == 1);
   }
 
   SECTION("3D Array properties") {
     using Array3D = NdArray<float, 2, 3, 4>;
-    STATIC_REQUIRE(Array3D::ndims == 3);
+    STATIC_REQUIRE(Array3D::ndim == 3);
     STATIC_REQUIRE(Array3D::size == 24);
-    STATIC_REQUIRE(Array3D::dims[0] == 2);
-    STATIC_REQUIRE(Array3D::dims[1] == 3);
-    STATIC_REQUIRE(Array3D::dims[2] == 4);
+    STATIC_REQUIRE(Array3D::shape[0] == 2);
+    STATIC_REQUIRE(Array3D::shape[1] == 3);
+    STATIC_REQUIRE(Array3D::shape[2] == 4);
+    STATIC_REQUIRE(Array3D::strides[0] == 12);
+    STATIC_REQUIRE(Array3D::strides[1] == 4);
+    STATIC_REQUIRE(Array3D::strides[2] == 1);
   }
 }
 

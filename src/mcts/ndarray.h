@@ -9,18 +9,28 @@ template <typename T, size_t... Dimensions>
   requires(std::is_arithmetic_v<T> && sizeof...(Dimensions) > 0 && ((Dimensions > 0) && ...))
 class NdArray {
 public:
-  static constexpr size_t ndims = sizeof...(Dimensions);
-  static constexpr std::array dims = { Dimensions... };
+  using value_type = T;
+
+  static constexpr size_t ndim = sizeof...(Dimensions);
+  static constexpr std::array shape = { Dimensions... };
   static constexpr size_t size = (Dimensions * ...);
-  static constexpr size_t bytes = sizeof(T) * size;
+  static constexpr size_t nbytes = sizeof(T) * size;
+  static constexpr std::array strides = [] consteval {
+    std::array<size_t, ndim> strides{};
+    strides[ndim - 1] = 1;
+    for (auto i = ndim - 1; i > 0; --i) {
+      strides[i - 1] = strides[i] * shape[i];
+    }
+    return strides;
+  }();
 
   constexpr NdArray() = default;
 
   template <typename... Indices>
-    requires(sizeof...(Indices) == ndims && (std::is_integral_v<Indices> && ...))
+    requires(sizeof...(Indices) == ndim && (std::is_integral_v<Indices> && ...))
   [[nodiscard]] constexpr auto operator[](this auto&& self, Indices... indices) noexcept
     -> decltype(auto) {
-    const auto offset = compute_offset(std::make_index_sequence<ndims>{}, indices...);
+    const auto offset = compute_offset(std::make_index_sequence<ndim>{}, indices...);
     return self.m_data[offset];
   }
 
@@ -42,15 +52,6 @@ public:
 
 private:
   std::array<T, size> m_data{};
-
-  static constexpr auto strides = [] consteval {
-    std::array<size_t, ndims> strides{};
-    strides[ndims - 1] = 1;
-    for (auto i = ndims - 1; i > 0; --i) {
-      strides[i - 1] = strides[i] * dims[i];
-    }
-    return strides;
-  }();
 
   template <size_t... Is>
   static constexpr auto compute_offset(std::index_sequence<Is...>, auto... indices) -> size_t {

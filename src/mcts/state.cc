@@ -101,8 +101,8 @@ auto State::update_feasibility_info(const Item& item) noexcept -> void {
   if (item.placed) return;
 
   auto max_height_arr = get_2d_window_max_in_box(m_height_map, item.shape.x, item.shape.y);
-  for (size_t x = 0; x <= m_feasibility_info.dims[0] - item.shape.x; ++x) {
-    for (size_t y = 0; y <= m_feasibility_info.dims[1] - item.shape.y; ++y) {
+  for (size_t x = 0; x <= m_feasibility_info.shape[0] - item.shape.x; ++x) {
+    for (size_t y = 0; y <= m_feasibility_info.shape[1] - item.shape.y; ++y) {
       auto max_height = max_height_arr[x, y];
       if (max_height + item.shape.z <= static_cast<int8_t>(bin_height)) {
         m_feasibility_info[x, y] = static_cast<int8_t>(max_height);
