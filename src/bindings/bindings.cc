@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <serializer.h>
 #include <state.h>
 
 #include <ranges>
@@ -53,5 +54,11 @@ PYBIND11_MODULE(alphapack, m) {
     .def_readonly_static("bin_height", &State::bin_height)
     .def_readonly_static("action_count", &State::action_count)
     .def_readonly_static("max_item_count", &State::max_item_count)
-    .def("transition", &State::transition, py::arg("action_idx"));
+    .def("transition", &State::transition, py::arg("action_idx"))
+    .def(
+      py::pickle(
+        [](const State& state) { return py::bytes(Serializer<State>::serialize(state)); },
+        [](const py::bytes& bytes) { return Serializer<State>::unserialize(bytes); }
+      )
+    );
 }

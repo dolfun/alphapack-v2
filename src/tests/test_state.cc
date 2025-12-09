@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "item.h"
+#include "serializer.h"
 #include "state.h"
 
 using namespace mcts;
@@ -199,4 +200,78 @@ TEST_CASE("State: Copy Independence", "[State][Copy]") {
   REQUIRE(s2.height_map()[0, 0] == 10);
   REQUIRE(s1.height_map()[0, 0] == 5);
   REQUIRE(s1.packing_efficiency() != s2.packing_efficiency());
+}
+
+TEST_CASE("State: Serialization Round-Trip", "[State][Serializer]") {
+  SECTION("Serialize and restore initial state") {
+    std::vector<Item> items = { Item::make_item(2, 2, 2), Item::make_item(1, 1, 1) };
+    State original_state(items);
+
+    std::string bytes = Serializer<State>::serialize(original_state);
+    REQUIRE(bytes.size() > 0);
+
+    State restored_state = Serializer<State>::unserialize(bytes);
+    bool hm_match = true;
+    auto& hm_orig = original_state.height_map();
+    auto& hm_rest = restored_state.height_map();
+    for (int i = 0; i < 100; ++i) {
+      if (hm_orig[i / 10, i % 10] != hm_rest[i / 10, i % 10]) hm_match = false;
+    }
+    REQUIRE(hm_match);
+    REQUIRE(restored_state.packing_efficiency() == original_state.packing_efficiency());
+  }
+
+  SECTION("Serialize and restore partially packed state") {
+    std::vector<Item> items = { Item::make_item(5, 5, 5), Item::make_item(2, 2, 1) };
+    State original_state(items);
+
+    (void)original_state.transition(0);
+
+    REQUIRE(original_state.packing_efficiency() > 0.0f);
+    auto& hm_orig = original_state.height_map();
+    REQUIRE(hm_orig[0, 0] == 5);
+    std::string bytes = Serializer<State>::serialize(original_state);
+
+    State restored_state = Serializer<State>::unserialize(bytes);
+    auto& hm_rest = restored_state.height_map();
+    REQUIRE(hm_rest[0, 0] == 5);
+    REQUIRE(hm_rest[4, 4] == 5);
+    REQUIRE(hm_rest[5, 5] == 0);
+
+    auto mask_orig = original_state.feasibility_mask();
+    auto mask_rest = restored_state.feasibility_mask();
+
+    bool mask_match = true;
+    if (mask_orig[0, 0] != mask_rest[0, 0]) mask_match = false;
+    if (mask_orig[9, 9] != mask_rest[9, 9]) mask_match = false;
+    REQUIRE(mask_match);
+
+    auto actions_orig = original_state.feasible_actions();
+    auto actions_rest = restored_state.feasible_actions();
+
+    REQUIRE(actions_rest.size() == actions_orig.size());
+    if (!actions_orig.empty()) {
+      REQUIRE(actions_rest[0] == actions_orig[0]);
+      REQUIRE(actions_rest.back() == actions_orig.back());
+    }
+
+    float reward_rest = restored_state.transition(actions_rest[0]);
+    REQUIRE(restored_state.height_map()[0, 0] == 6);
+  }
+
+  SECTION("Byte-level consistency") {
+    std::vector<Item> items = { Item::make_item(1, 1, 1) };
+    State s1(items);
+    State s2(items);
+
+    std::string b1 = Serializer<State>::serialize(s1);
+    std::string b2 = Serializer<State>::serialize(s2);
+    REQUIRE(b1 == b2);
+
+    (void)s1.transition(0);
+    std::string b1_mod = Serializer<State>::serialize(s1);
+
+    REQUIRE(b1 != b1_mod);
+    REQUIRE(b1.size() == b1_mod.size());
+  }
 }

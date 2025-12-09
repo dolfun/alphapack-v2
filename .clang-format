@@ -18,5 +18,3 @@ AlignAfterOpenBracket: BlockIndent
 
 AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: Empty
-
-LambdaBodyIndentation: OuterScope

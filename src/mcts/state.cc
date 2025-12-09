@@ -44,13 +44,11 @@ auto State::feasibility_mask() const noexcept -> FeasibilityMask {
 }
 
 auto State::packing_efficiency() const noexcept -> float {
-  auto volumes = m_items | std::views::transform([](const Item& item) {
-    return item.placed ? item.volume() : 0u;
-  });
-
-  const auto total_volume = std::ranges::fold_left(volumes, 0u, std::plus<>{});
+  auto get_packed_volume = [](const Item& item) { return item.placed ? item.volume() : 0u; };
+  const auto packed_volume =
+    std::ranges::fold_left(m_items | std::views::transform(get_packed_volume), 0u, std::plus<>{});
   constexpr auto bin_volume = bin_length * bin_length * bin_height;
-  return static_cast<float>(total_volume) / bin_volume;
+  return static_cast<float>(packed_volume) / bin_volume;
 }
 
 auto State::feasible_actions() const noexcept -> std::vector<Action> {

@@ -1,4 +1,4 @@
-add_library(mcts ndarray.h item.h state.h state.cc)
+add_library(mcts ndarray.h item.h state.h state.cc serializer.h)
 target_compile_features(mcts PUBLIC cxx_std_23)
 target_include_directories(mcts PUBLIC .)
 

@@ -15,6 +15,9 @@
 
 namespace mcts {
 
+template <typename T>
+class Serializer;
+
 template <typename R, typename T>
 concept RangeOf =
   std::ranges::input_range<R> && std::convertible_to<std::ranges::range_value_t<R>, T>;
@@ -51,6 +54,9 @@ public:
   [[nodiscard]] auto transition(Action) noexcept -> float;
 
 private:
+  State() = default;
+  friend class Serializer<State>;
+
   auto update_feasibility_info(const Item&) noexcept -> void;
 
   Items m_items{};
