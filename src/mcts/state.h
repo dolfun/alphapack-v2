@@ -66,13 +66,13 @@ private:
 template <RangeOf<Item> ItemRange>
 State::State(const ItemRange& items) {
   if (std::ranges::empty(items) || std::ranges::size(items) > max_item_count) {
-    throw std::runtime_error("Invalid number of items in constructor");
+    throw std::invalid_argument("Invalid number of items in constructor");
   }
 
   std::ranges::for_each(items, [](const Item& item) {
     if (item.volume() == 0 || item.shape.x > bin_length || item.shape.y > bin_length ||
         item.shape.z > bin_height || item.placed) {
-      throw std::runtime_error(
+      throw std::invalid_argument(
         std::format(
           "Invalid item in constructor: shape({}, {}, {}), placed({})",
           item.shape.x,
