@@ -1,4 +1,9 @@
 #pragma once
+#include <cstring>
+#include <string>
+#include <string_view>
+#include <utility>
+
 #include "state.h"
 
 namespace mcts {
