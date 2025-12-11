@@ -14,7 +14,7 @@ struct InferenceInfo {
   std::array<int64_t, 2> additional_input_shape;
   void* additional_input_ptr;
 
-  std::array<int64_t, 3> policy_output_shape;
+  std::array<int64_t, 2> policy_output_shape;
   void* policy_output_ptr;
 
   std::array<int64_t, 2> value_output_shape;
