@@ -16,28 +16,34 @@ find_package(
 )
 
 # PyTorch
-execute_process(
-  COMMAND "${Python_EXECUTABLE}" -c
-          "import torch; print(torch.utils.cmake_prefix_path)"
-  OUTPUT_VARIABLE TORCH_PYTHON_PREFIX
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(DEFINED TORCH_PATH AND TORCH_PATH)
+  message(STATUS "TORCH_PATH specified: ${TORCH_PATH}")
+  list(APPEND CMAKE_PREFIX_PATH "${TORCH_PATH}")
 
-if(NOT TORCH_PYTHON_PREFIX)
-  message(
-    FATAL_ERROR
-      "PyTorch installation not found for Python interpreter: ${Python_EXECUTABLE}"
+else()
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c
+            "import torch; print(torch.utils.cmake_prefix_path)"
+    OUTPUT_VARIABLE TORCH_PYTHON_PREFIX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-endif()
 
-message(STATUS "Found PyTorch: ${TORCH_PYTHON_PREFIX}")
-list(APPEND CMAKE_PREFIX_PATH "${TORCH_PYTHON_PREFIX}")
+  if(NOT TORCH_PYTHON_PREFIX)
+    message(
+      FATAL_ERROR
+        "PyTorch installation not found for Python interpreter: ${Python_EXECUTABLE}"
+    )
+  endif()
+
+  message(STATUS "Found PyTorch via Python: ${TORCH_PYTHON_PREFIX}")
+  list(APPEND CMAKE_PREFIX_PATH "${TORCH_PYTHON_PREFIX}")
+endif()
 
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 function(target_link_pytorch TARGET_NAME)
-  target_link_libraries(${TARGET_NAME} "${TORCH_LIBRARIES}")
+  target_link_libraries(${TARGET_NAME} PUBLIC "${TORCH_LIBRARIES}")
   if(MSVC)
     file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
     add_custom_command(
