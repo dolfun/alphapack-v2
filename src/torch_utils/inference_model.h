@@ -10,8 +10,11 @@
 namespace torch_utils {
 
 struct InferenceInfo {
-  std::array<int64_t, 4> input_shape;
-  void* input_ptr;
+  std::array<int64_t, 4> image_input_shape;
+  void* image_input_ptr;
+
+  std::array<int64_t, 2> additional_input_shape;
+  void* additional_input_ptr;
 
   std::array<int64_t, 3> policy_output_shape;
   void* policy_output_ptr;
@@ -31,28 +34,21 @@ public:
 private:
   friend class InferenceModel;
 
-  InferenceResult(at::cuda::CUDAEvent event) : m_event{ std::move(event) } {}
+  InferenceResult(at::cuda::CUDAEvent event) : m_event{std::move(event)} {}
 
   at::cuda::CUDAEvent m_event{};
 };
 
 class InferenceModel {
 public:
+  InferenceModel(std::istream&);
   InferenceModel(torch::jit::script::Module);
-  ~InferenceModel() = default;
-
-  InferenceModel(const InferenceModel&) = delete;
-  InferenceModel& operator=(const InferenceModel&) = delete;
-  InferenceModel(InferenceModel&&) = default;
-  InferenceModel& operator=(InferenceModel&&) = default;
 
   static auto make_from_bytes(const std::string&) -> InferenceModel;
 
   [[nodiscard]] auto run(const InferenceInfo&, const at::cuda::CUDAStream&) -> InferenceResult;
 
 private:
-  InferenceModel(std::istream&);
-
   torch::jit::script::Module m_model;
 };
 

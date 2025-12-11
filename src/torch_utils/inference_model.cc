@@ -7,14 +7,14 @@
 
 namespace torch_utils {
 
-InferenceModel::InferenceModel(torch::jit::script::Module model) : m_model{ std::move(model) } {
+InferenceModel::InferenceModel(torch::jit::script::Module model) : m_model{std::move(model)} {
   m_model.eval();
   m_model = torch::jit::freeze(m_model);
-  m_model = torch::jit::optimize_for_inference(m_model);
+  // m_model = torch::jit::optimize_for_inference(m_model);
 }
 
 InferenceModel::InferenceModel(std::istream& in)
-    : InferenceModel{ torch::jit::load(in, torch::kCUDA, false) } {}
+    : InferenceModel{torch::jit::load(in, torch::kCUDA, false)} {}
 
 auto InferenceModel::make_from_bytes(const std::string& buffer) -> InferenceModel {
   std::istringstream stream(buffer);
@@ -23,19 +23,24 @@ auto InferenceModel::make_from_bytes(const std::string& buffer) -> InferenceMode
 
 auto InferenceModel::run(const InferenceInfo& info, const at::cuda::CUDAStream& stream)
   -> InferenceResult {
-  at::cuda::CUDAStreamGuard stream_guard{ stream };
+  at::cuda::CUDAStreamGuard stream_guard{stream};
   at::InferenceMode inference_mode_guard;
 
   auto options =
     torch::TensorOptions().dtype(torch::kFloat32).device(torch::kCPU).pinned_memory(true);
 
   // Copy input to CPU
-  auto input_cpu = torch::from_blob(info.input_ptr, info.input_shape, options);
-  assert(input_cpu.is_pinned());
-  auto input_gpu = input_cpu.to(torch::kCUDA, true);
+  auto image_input_cpu = torch::from_blob(info.image_input_ptr, info.image_input_shape, options);
+  assert(image_input_cpu.is_pinned());
+  auto image_input_gpu = image_input_cpu.to(torch::kCUDA, true);
+
+  auto additional_input_cpu =
+    torch::from_blob(info.additional_input_ptr, info.additional_input_shape, options);
+  assert(additional_input_cpu.is_pinned());
+  auto additional_input_gpu = additional_input_cpu.to(torch::kCUDA, true);
 
   // Inference
-  auto output = m_model.forward({ input_gpu });
+  auto output = m_model.forward({image_input_gpu, additional_input_gpu});
 
   // Extract output
   auto output_tuple = output.toTupleRef();
@@ -54,11 +59,11 @@ auto InferenceModel::run(const InferenceInfo& info, const at::cuda::CUDAStream& 
   value_output_cpu.copy_(value_output_gpu, true);
 
   // Event
-  at::cuda::CUDAEvent event{ cudaEventDisableTiming };
+  at::cuda::CUDAEvent event{cudaEventDisableTiming};
   event.record(stream);
 
   // Result
-  return InferenceResult{ std::move(event) };
+  return InferenceResult{std::move(event)};
 }
 
 }  // namespace torch_utils

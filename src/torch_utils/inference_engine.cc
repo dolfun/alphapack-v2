@@ -6,7 +6,7 @@
 namespace torch_utils {
 
 InferenceEngine::InferenceEngine(InferenceModel model, size_t pool_size)
-    : m_model{ std::move(model) }, m_curr_stream_idx{ 0 } {
+    : m_model{std::move(model)}, m_curr_stream_idx{0} {
   if (pool_size == 0) {
     throw std::invalid_argument("Pool size cannot be zero.");
   }
