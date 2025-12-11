@@ -5,9 +5,13 @@
 #include <c10/cuda/CUDAStream.h>
 
 #include <atomic>
+#include <exception>
+#include <iostream>
+#include <print>
 #include <stdexcept>
 #include <utility>
 #include <vector>
+
 
 namespace torch_utils {
 
@@ -54,15 +58,21 @@ InferenceEngine::InferenceEngine(InferenceModel model, size_t pool_size)
 InferenceEngine::~InferenceEngine() = default;
 
 auto InferenceEngine::run(const InferenceInfo& input) -> InferenceResult {
-  auto stream = m_pimpl->get_next_stream();
-  at::cuda::CUDAStreamGuard stream_guard{stream};
+  try {
+    auto stream = m_pimpl->get_next_stream();
+    at::cuda::CUDAStreamGuard stream_guard{stream};
 
-  m_pimpl->m_model.infer(input);
+    m_pimpl->m_model.infer(input);
 
-  InferenceResult result{};
-  result.m_pimpl->m_event.record(stream);
+    InferenceResult result{};
+    result.m_pimpl->m_event.record(stream);
 
-  return result;
+    return result;
+
+  } catch (const std::exception& e) {
+    std::println(std::cerr, "Error: {}", e.what());
+    std::terminate();
+  }
 }
 
 }  // namespace torch_utils
