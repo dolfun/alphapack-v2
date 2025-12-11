@@ -1,8 +1,10 @@
 #include <pybind11/pybind11.h>
-#include <serializer.h>
-#include <state.h>
 
 #include <ranges>
+
+#include "model_info.h"
+#include "serializer.h"
+#include "state.h"
 
 namespace py = pybind11;
 using namespace mcts;
@@ -61,4 +63,10 @@ PYBIND11_MODULE(alphapack, m) {
         [](const py::bytes& bytes) { return Serializer<State>::unserialize(bytes); }
       )
     );
+
+  // ModelInfo
+  py::class_<ModelInfo>(m, "ModelInfo")
+    .def_readonly_static("input_feature_count", &ModelInfo::input_feature_count)
+    .def_readonly_static("additional_input_count", &ModelInfo::additional_input_count)
+    .def_readonly_static("value_support_count", &ModelInfo::value_support_count);
 }
