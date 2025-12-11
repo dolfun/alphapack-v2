@@ -1,8 +1,10 @@
 import torch
 from torch import nn
+from .alphapack import ModelInfo
 
 
 class GlobalPoolingLayer(nn.Module):
+  __annotations__ = {}
 
   def __init__(self) -> None:
     super().__init__()
@@ -15,6 +17,7 @@ class GlobalPoolingLayer(nn.Module):
 
 
 class GlobalPoolingBiasStructure(nn.Module):
+  c_pool: int
 
   def __init__(self, c_x: int, c_g: int) -> None:
     super().__init__()
@@ -33,6 +36,7 @@ class GlobalPoolingBiasStructure(nn.Module):
 
 
 class GlobalPoolingResidualBlock(nn.Module):
+  c_pool: int
 
   def __init__(self, c: int, c_pool: int) -> None:
     super().__init__()
@@ -58,17 +62,17 @@ class GlobalPoolingResidualBlock(nn.Module):
 
   def forward(self, x_in: torch.Tensor) -> torch.Tensor:
     pool_in = self.conv1(x_in)
-
     pool_x = pool_in[:, self.c_pool:, :, :]
     pool_g = pool_in[:, :self.c_pool, :, :]
     pool_out = self.global_pooling(pool_x, pool_g)
 
     x_out = self.conv2(pool_out)
-    x_out += x_in
+    x_out = x_out + x_in
     return x_out
 
 
 class ResidualBlock(nn.Module):
+  __annotations__ = {}
 
   def __init__(self, c: int) -> None:
     super().__init__()
@@ -88,30 +92,29 @@ class ResidualBlock(nn.Module):
 
   def forward(self, x_in: torch.Tensor) -> torch.Tensor:
     x_out = self.block(x_in)
-    x_out += x_in
+    x_out = x_out + x_in
     return x_out
 
 
 class Trunk(nn.Module):
+  __annotations__ = {}
 
-  def __init__(
-    self, c_in: int, fc_in: int, nr_blocks: int, nr_pool_blocks: int, c: int, c_pool: int
-  ) -> None:
+  def __init__(self, c_in: int, fc_in: int, n: int, n_pool: int, c: int, c_pool: int) -> None:
     super().__init__()
 
     self.conv = nn.Conv2d(c_in, c, kernel_size=5, padding=2, bias=False)
     self.fc = nn.Linear(fc_in, c)
 
-    assert nr_blocks % nr_pool_blocks == 0
-    pool_freq = nr_blocks // nr_pool_blocks
-    self.residual_blocks = nn.ModuleList(
-      [
-        (
-          ResidualBlock(c) if i % pool_freq != pool_freq -
-          1 else GlobalPoolingResidualBlock(c, c_pool)
-        ) for i in range(nr_blocks)
-      ]
-    )
+    assert n % n_pool == 0
+    pool_freq = n // n_pool
+    blocks: list[nn.Module] = []
+    for i in range(n):
+      if i % pool_freq != pool_freq - 1:
+        blocks.append(ResidualBlock(c))
+      else:
+        blocks.append(GlobalPoolingResidualBlock(c, c_pool))
+
+    self.residual_blocks = nn.Sequential(*blocks)
 
     self.bn = nn.BatchNorm2d(c)
     self.relu = nn.ReLU(inplace=True)
@@ -120,17 +123,14 @@ class Trunk(nn.Module):
     image_out = self.conv(image_in)
     additional_out = self.fc(additional_in)
     blocks_in = image_out + additional_out[:, :, None, None]
-
-    blocks_out = blocks_in
-    for block in self.residual_blocks:
-      blocks_out = block(blocks_out)
-
+    blocks_out = self.residual_blocks(blocks_in)
     merged_out = self.bn(blocks_out)
     merged_out = self.relu(merged_out)
     return merged_out
 
 
 class PolicyHead(nn.Module):
+  __annotations__ = {}
 
   def __init__(self, c: int, c_head: int) -> None:
     super().__init__()
@@ -154,6 +154,7 @@ class PolicyHead(nn.Module):
 
 
 class ValueHead(nn.Module):
+  __annotations__ = {}
 
   def __init__(self, c: int, c_head: int, c_val: int, c_support: int) -> None:
     super().__init__()
@@ -172,27 +173,28 @@ class ValueHead(nn.Module):
 
 
 class PolicyValueNetwork(nn.Module):
+  __annotations__ = {}
 
   def __init__(
     self,
     *,
     n: int = 6,
+    n_pool: int = 2,
     c: int = 48,
     c_pool: int = 16,
     c_head: int = 16,
     c_val: int = 128,
-    pool_count: int = 2,
-    input_feature_count: int,
-    additional_input_count: int,
-    value_support_count: int
+    input_feature_count: int = ModelInfo.input_feature_count,
+    additional_input_count: int = ModelInfo.additional_input_count,
+    value_support_count: int = ModelInfo.value_support_count
   ) -> None:
     super().__init__()
 
     self.trunk = Trunk(
       c_in=input_feature_count,
       fc_in=additional_input_count,
-      nr_blocks=n,
-      nr_pool_blocks=pool_count,
+      n=n,
+      n_pool=n_pool,
       c=c,
       c_pool=c_pool,
     )
