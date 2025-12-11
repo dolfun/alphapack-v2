@@ -2,6 +2,7 @@
 /.vscode/
 /build/
 /venv/
+/temp/
 
 __pycache__/
 *.pyi

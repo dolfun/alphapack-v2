@@ -1,2 +1,2 @@
-from .add import add
-from .alphapack import multiply
+from .alphapack import *
+from .policy_value_network import PolicyValueNetwork
