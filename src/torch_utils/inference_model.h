@@ -1,10 +1,8 @@
 #pragma once
-#include <ATen/cuda/CUDAEvent.h>
-#include <c10/cuda/CUDAStream.h>
-#include <torch/script.h>
 
 #include <array>
 #include <istream>
+#include <memory>
 #include <string>
 
 namespace torch_utils {
@@ -23,33 +21,23 @@ struct InferenceInfo {
   void* value_output_ptr;
 };
 
-class InferenceResult {
-public:
-  InferenceResult() = default;
-
-  [[nodiscard]] auto is_done() const noexcept -> bool {
-    return m_event.query();
-  }
-
-private:
-  friend class InferenceModel;
-
-  InferenceResult(at::cuda::CUDAEvent event) : m_event{std::move(event)} {}
-
-  at::cuda::CUDAEvent m_event{};
-};
-
 class InferenceModel {
 public:
-  InferenceModel(std::istream&);
-  InferenceModel(torch::jit::script::Module);
+  explicit InferenceModel(std::istream&);
+  explicit InferenceModel(const std::string&);
 
-  static auto make_from_bytes(const std::string&) -> InferenceModel;
+  ~InferenceModel();
 
-  [[nodiscard]] auto run(const InferenceInfo&, const at::cuda::CUDAStream&) -> InferenceResult;
+  InferenceModel(const InferenceModel&) = delete;
+  InferenceModel& operator=(const InferenceModel&) = delete;
+  InferenceModel(InferenceModel&&) noexcept;
+  InferenceModel& operator=(InferenceModel&&) noexcept;
+
+  auto infer(const InferenceInfo&) -> void;
 
 private:
-  torch::jit::script::Module m_model;
+  struct Impl;
+  std::unique_ptr<Impl> m_pimpl;
 };
 
-};  // namespace torch_utils
+}  // namespace torch_utils
