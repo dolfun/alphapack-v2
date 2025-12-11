@@ -12,7 +12,7 @@ public:
   using value_type = T;
 
   static constexpr size_t ndim = sizeof...(Dimensions);
-  static constexpr std::array shape = { Dimensions... };
+  static constexpr std::array shape = {Dimensions...};
   static constexpr size_t size = (Dimensions * ...);
   static constexpr size_t nbytes = sizeof(T) * size;
   static constexpr std::array strides = [] consteval {

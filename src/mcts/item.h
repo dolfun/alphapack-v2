@@ -18,7 +18,7 @@ struct Item {
   }
 
   static constexpr Item make_item(uint8_t x, uint8_t y, uint8_t z) {
-    return Item{ .shape = { x, y, z }, .placed = false };
+    return Item{.shape = {x, y, z}, .placed = false};
   }
 };
 

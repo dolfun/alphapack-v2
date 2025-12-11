@@ -5,9 +5,6 @@ IndentWidth: 2
 ContinuationIndentWidth: 2
 AccessModifierOffset: -2
 
-SpaceBeforeCpp11BracedList: false
-Cpp11BracedListStyle: false
-
 BinPackArguments: false
 AllowAllArgumentsOnNextLine: false
 
