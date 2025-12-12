@@ -42,8 +42,11 @@ endif()
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-function(target_link_pytorch TARGET_NAME)
-  target_link_libraries(${TARGET_NAME} PUBLIC "${TORCH_LIBRARIES}")
+function(target_link_torch TARGET_NAME)
+  target_link_libraries(${TARGET_NAME} PRIVATE "${TORCH_LIBRARIES}")
+endfunction()
+
+function(target_copy_torch_dll TARGET_NAME)
   if(MSVC)
     file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
     add_custom_command(
