@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import csv
 import subprocess
@@ -7,7 +6,7 @@ import re
 from pathlib import Path
 
 BATCH_SIZES = [16, 32, 64, 96, 128, 192, 256]
-NUM_RUNS = 3
+NUM_RUNS = 4
 
 BATCH_RESULTS_RE = re.compile(
   r"Results \(Batch Size:\s*(\d+)\):\s*"
@@ -54,8 +53,8 @@ def parse_output(output: str, expected_batch_size: int):
   }
 
 
-def run_benchmark(exe_path: Path, model_path: Path, batch_size: int) -> str:
-  cmd = [str(exe_path), str(model_path), str(batch_size)]
+def run_benchmark(exe_path: Path, model_path: Path, batch_size: int, threads: int) -> str:
+  cmd = [str(exe_path), str(model_path), str(batch_size), str(threads)]
   print(f"Running: {' '.join(cmd)}")
 
   result = subprocess.run(
@@ -72,9 +71,10 @@ def run_benchmark(exe_path: Path, model_path: Path, batch_size: int) -> str:
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("--exe", required=True)
-  parser.add_argument("--model", required=True)
-  parser.add_argument("--output", default="benchmark_results.csv")
+  parser.add_argument("--exe", required=True, help="Path to the C++ executable")
+  parser.add_argument("--model", required=True, help="Path to the model file")
+  parser.add_argument("--threads", type=int, default=16, help="Number of threads (default: 16)")
+  parser.add_argument("--output", default="benchmark_results.csv", help="Output CSV file path")
   args = parser.parse_args()
 
   exe_path = Path(args.exe)
@@ -86,13 +86,15 @@ def main():
     print(f"\n=== RUN {run} ===")
 
     for batch in BATCH_SIZES:
-      output = run_benchmark(exe_path, model_path, batch)
+      output = run_benchmark(exe_path, model_path, batch, args.threads)
       metrics = parse_output(output, batch)
       metrics["run"] = run
+      metrics["threads"] = args.threads
       all_rows.append(metrics)
 
   fieldnames = [
     "run",
+    "threads",
     "batch_size",
     "batch_throughput_batches_per_sec",
     "time_taken_sec",

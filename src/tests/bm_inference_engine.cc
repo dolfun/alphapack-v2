@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <latch>
+#include <memory_resource>
 #include <numeric>
 #include <print>
 #include <random>
@@ -22,7 +23,6 @@ using namespace torch_utils;
 using namespace mcts;
 
 constexpr int64_t batch_count = 128;
-constexpr int64_t thread_count = 16;
 constexpr int64_t run_size = 10000;
 
 auto read_file(const std::string& path) -> std::string {
@@ -45,12 +45,13 @@ auto fill_random(float* ptr, size_t count) -> void {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    std::println(std::cerr, "Usage: {} <model_path> [batch_size]", argv[0]);
+    std::println(std::cerr, "Usage: {} <model_path> [batch_size] [thread_count]", argv[0]);
     return 1;
   }
 
   std::string model_path = argv[1];
   int64_t batch_size = 32;
+  size_t thread_count = 16;
 
   if (argc >= 3) {
     try {
@@ -60,6 +61,18 @@ int main(int argc, char** argv) {
       }
     } catch (const std::exception& e) {
       std::println(std::cerr, "Error parsing batch size '{}': {}", argv[2], e.what());
+      return 1;
+    }
+  }
+
+  if (argc >= 4) {
+    try {
+      thread_count = std::stoll(argv[3]);
+      if (thread_count <= 0) {
+        throw std::invalid_argument("must be > 0");
+      }
+    } catch (const std::exception& e) {
+      std::println(std::cerr, "Error parsing thread count '{}': {}", argv[3], e.what());
       return 1;
     }
   }
@@ -155,7 +168,13 @@ int main(int argc, char** argv) {
       threads.emplace_back(worker_task);
     }
 
-    std::forward_list<size_t> active_indices;
+    constexpr size_t estimated_node_size =
+      sizeof(size_t) + sizeof(void*) + alignof(std::max_align_t);
+    constexpr size_t buffer_size = run_size * estimated_node_size;
+    alignas(std::max_align_t) std::byte buffer[buffer_size];
+    std::pmr::monotonic_buffer_resource pool(buffer, buffer_size, std::pmr::null_memory_resource());
+
+    std::pmr::forward_list<size_t> active_indices(&pool);
     for (size_t i = run_size; i > 0; --i) {
       active_indices.push_front(i - 1);
     }
