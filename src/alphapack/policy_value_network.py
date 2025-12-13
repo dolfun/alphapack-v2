@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from .alphapack import ModelInfo
+from .bindings import ModelInfo
 
 
 class GlobalPoolingLayer(nn.Module):

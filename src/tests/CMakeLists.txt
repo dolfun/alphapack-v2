@@ -1,7 +1,6 @@
 add_executable(bm_inference_engine bm_inference_engine.cc)
 target_compile_features(bm_inference_engine PRIVATE cxx_std_23)
 target_link_libraries(bm_inference_engine PRIVATE mcts torch_utils)
-target_link_torch(bm_inference_engine)
 target_copy_torch_dll(bm_inference_engine)
 
 add_executable(unit_tests test_ndarray.cc test_state.cc)
