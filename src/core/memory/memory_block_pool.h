@@ -23,10 +23,8 @@ public:
     assert(idx < self.m_block_count);
     auto raw_ptr = self.m_storage.ptr();
 
-    using BytePtr = std::conditional_t<
-      std::is_const_v<std::remove_pointer_t<decltype(raw_ptr)>>,
-      const std::byte*,
-      std::byte*>;
+    using BytePtr =
+      std::conditional_t<std::is_const_v<std::remove_pointer_t<decltype(raw_ptr)>>, const std::byte*, std::byte*>;
 
     auto byte_ptr = static_cast<BytePtr>(raw_ptr);
     return static_cast<decltype(raw_ptr)>(byte_ptr + idx * self.m_block_stride);

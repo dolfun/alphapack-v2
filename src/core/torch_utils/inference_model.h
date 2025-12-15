@@ -1,6 +1,5 @@
 #pragma once
 #include <array>
-#include <istream>
 #include <memory>
 #include <string>
 
@@ -32,7 +31,7 @@ public:
   InferenceModel(InferenceModel&&) noexcept;
   InferenceModel& operator=(InferenceModel&&) noexcept;
 
-  auto infer(const InferenceInfo&) -> void;
+  auto infer(const InferenceInfo&) const -> void;
 
 private:
   struct Impl;

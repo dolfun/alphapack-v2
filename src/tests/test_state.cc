@@ -91,7 +91,7 @@ TEST_CASE("State: Transitions and Height Map Updates", "[State][Transition]") {
 }
 
 TEST_CASE("State: Packing Efficiency", "[State][Efficiency]") {
-  std::vector<Item> items = {Item::make_item(10, 10, 5), Item::make_item(1, 1, 1)};
+  const std::vector<Item> items = {Item::make_item(10, 10, 5), Item::make_item(1, 1, 1)};
   State state(items);
 
   REQUIRE(state.packing_efficiency() == 0.0f);
@@ -100,7 +100,7 @@ TEST_CASE("State: Packing Efficiency", "[State][Efficiency]") {
 }
 
 TEST_CASE("State: Item Rotation and Queue Management", "[State][Queue]") {
-  std::vector<Item> items = {Item::make_item(10, 10, 1), Item::make_item(1, 1, 1)};
+  const std::vector<Item> items = {Item::make_item(10, 10, 1), Item::make_item(1, 1, 1)};
   State state(items);
 
   REQUIRE(state.feasible_actions().size() == 1);
@@ -111,26 +111,26 @@ TEST_CASE("State: Item Rotation and Queue Management", "[State][Queue]") {
 }
 
 TEST_CASE("State: Impossible Stacking", "[State][Constraints]") {
-  std::vector<Item> items = {Item::make_item(5, 5, 6), Item::make_item(5, 5, 5)};
+  const std::vector<Item> items = {Item::make_item(5, 5, 6), Item::make_item(5, 5, 5)};
   State state(items);
   (void)state.transition(0);
   auto actions = state.feasible_actions();
 
-  bool can_stack_at_0 = std::ranges::find(actions, 0) != actions.end();
+  const bool can_stack_at_0 = std::ranges::find(actions, 0) != actions.end();
   REQUIRE_FALSE(can_stack_at_0);
 
-  bool can_place_at_side = std::ranges::find(actions, 5) != actions.end();
+  const bool can_place_at_side = std::ranges::find(actions, 5) != actions.end();
   REQUIRE(can_place_at_side);
 }
 
 TEST_CASE("State: Advanced Input Validation", "[State][Validation]") {
   SECTION("Throws on zero dimensions") {
-    std::vector<Item> items = {Item::make_item(0, 5, 5)};
+    const std::vector<Item> items = {Item::make_item(0, 5, 5)};
     REQUIRE_THROWS_AS(State(items), std::invalid_argument);
   }
 
   SECTION("Throws on dimensions exceeding bin size") {
-    std::vector<Item> items = {Item::make_item(11, 1, 1)};
+    const std::vector<Item> items = {Item::make_item(11, 1, 1)};
     REQUIRE_THROWS_AS(State(items), std::invalid_argument);
   }
 }
@@ -176,15 +176,15 @@ TEST_CASE("State: Multi-Cell Boundary Limits", "[State][Feasibility]") {
 }
 
 TEST_CASE("State: Reward Calculation", "[State][Reward]") {
-  std::vector<Item> items = {Item::make_item(1, 1, 1), Item::make_item(1, 1, 1)};
+  const std::vector<Item> items = {Item::make_item(1, 1, 1), Item::make_item(1, 1, 1)};
   State state(items);
 
-  float scaling = 64.0f * 65.0f / 2.0f;
+  constexpr float scaling = 64.0f * 65.0f / 2.0f;
 
-  float r1 = state.transition(0);
+  const float r1 = state.transition(0);
   REQUIRE(r1 == Catch::Approx(1.0f / scaling));
 
-  float r2 = state.transition(0);
+  const float r2 = state.transition(0);
   REQUIRE(r2 == Catch::Approx(2.0f / scaling));
 }
 

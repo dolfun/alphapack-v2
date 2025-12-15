@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <cmath>
 #include <forward_list>
 #include <fstream>
 #include <iostream>
@@ -25,7 +24,7 @@ constexpr size_t batch_count = 128;
 constexpr size_t run_size = 10000;
 
 auto read_file(const std::string& path) -> std::string {
-  std::ifstream file(path, std::ios::binary);
+  const std::ifstream file(path, std::ios::binary);
   if (!file) {
     throw std::runtime_error("Failed to open model file: " + path);
   }
@@ -44,11 +43,7 @@ auto fill_random(float* ptr, size_t count) -> void {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    std::println(
-      std::cerr,
-      "Usage: {} <model_path> [batch_size] [thread_count] [stream_count]",
-      argv[0]
-    );
+    std::println(std::cerr, "Usage: {} <model_path> [batch_size] [thread_count] [stream_count]", argv[0]);
     return 1;
   }
 
@@ -142,24 +137,21 @@ int main(int argc, char** argv) {
     std::latch start_latch{1};
     std::atomic<int64_t> in_flight_counter{0};
     std::atomic<size_t> global_idx{0};
-    std::vector<std::pair<InferenceResult, std::chrono::high_resolution_clock::time_point>> results(
-      run_size
-    );
+    std::vector<std::pair<InferenceResult, std::chrono::high_resolution_clock::time_point>> results(run_size);
 
     auto worker_task = [&] {
       start_latch.wait();
 
       while (true) {
-        size_t idx = global_idx.fetch_add(1, std::memory_order_relaxed);
+        const auto idx = global_idx.fetch_add(1, std::memory_order_relaxed);
         if (idx >= run_size) {
           break;
         }
 
-        size_t slot = idx % batch_count;
+        const auto slot = idx % batch_count;
 
         InferenceInfo info{
-          .image_input_shape =
-            {batch_size, ModelInfo::input_feature_count, State::bin_length, State::bin_length},
+          .image_input_shape = {batch_size, ModelInfo::input_feature_count, State::bin_length, State::bin_length},
           .image_input_ptr = image_input_pool[slot],
 
           .additional_input_shape = {batch_size, ModelInfo::additional_input_count},
@@ -245,8 +237,7 @@ int main(int argc, char** argv) {
 
     double avg_in_flight_batches = 0.0;
     if (in_flight_counter_updates > 0) {
-      avg_in_flight_batches =
-        static_cast<double>(in_flight_counter_sum) / in_flight_counter_updates;
+      avg_in_flight_batches = static_cast<double>(in_flight_counter_sum) / in_flight_counter_updates;
     }
 
     std::println("--------------------------------");

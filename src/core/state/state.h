@@ -18,8 +18,7 @@ template <typename T>
 class Serializer;
 
 template <typename R, typename T>
-concept RangeOf =
-  std::ranges::input_range<R> && std::convertible_to<std::ranges::range_value_t<R>, T>;
+concept RangeOf = std::ranges::input_range<R> && std::convertible_to<std::ranges::range_value_t<R>, T>;
 
 class State {
 public:
@@ -70,8 +69,8 @@ State::State(const ItemRange& items) {
   }
 
   std::ranges::for_each(items, [](const Item& item) {
-    if (item.volume() == 0 || item.shape.x > bin_length || item.shape.y > bin_length ||
-        item.shape.z > bin_height || item.placed) {
+    if (item.volume() == 0 || item.shape.x > bin_length || item.shape.y > bin_length || item.shape.z > bin_height ||
+        item.placed) {
       throw std::invalid_argument(
         std::format(
           "Invalid item in constructor: shape({}, {}, {}), placed({})",

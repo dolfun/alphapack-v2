@@ -1,5 +1,4 @@
 #pragma once
-#include <cstddef>
 #include <new>
 
 namespace alpack {
@@ -15,9 +14,6 @@ struct Allocator {
   FreeFn free;
 };
 
-constexpr inline Allocator global_alloc_free_pair{
-  .allocate = (::operator new),
-  .free = (::operator delete)
-};
+constexpr inline Allocator global_alloc_free_pair{.allocate = (::operator new), .free = (::operator delete)};
 
 }  // namespace alpack

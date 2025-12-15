@@ -28,8 +28,7 @@ public:
 
   template <typename... Indices>
     requires(sizeof...(Indices) == ndim && (std::is_integral_v<Indices> && ...))
-  [[nodiscard]] constexpr auto operator[](this auto&& self, Indices... indices) noexcept
-    -> decltype(auto) {
+  [[nodiscard]] constexpr auto operator[](this auto&& self, Indices... indices) noexcept -> decltype(auto) {
     const auto offset = compute_offset(std::make_index_sequence<ndim>{}, indices...);
     return self.m_data[offset];
   }

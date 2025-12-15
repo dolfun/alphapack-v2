@@ -1,7 +1,6 @@
 #pragma once
 #include <core/state/state.h>
 
-#include <cstring>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -22,7 +21,7 @@ public:
     };
 
     size_t total_size = 0;
-    for (auto [_, size] : buffer_infos) {
+    for (const auto size : buffer_infos | std::views::values) {
       total_size += size;
     }
 

@@ -3,15 +3,13 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <cstring>
 #include <functional>
 #include <ranges>
 
 namespace alpack {
 
 template <typename T, size_t box_n, size_t box_m>
-constexpr auto
-get_2d_window_max_in_box(const NdArray<T, box_n, box_m>& box, size_t window_n, size_t window_m) {
+constexpr auto get_2d_window_max_in_box(const NdArray<T, box_n, box_m>& box, size_t window_n, size_t window_m) {
   NdArray<T, box_n, box_m> result{};
 
   for (size_t x = 0; x < box_n; ++x) {
@@ -56,7 +54,7 @@ auto State::feasible_actions() const noexcept -> std::vector<Action> {
 
   Action action_idx = 0;
   std::vector<Action> actions;
-  for (auto feasible : m_feasibility_info) {
+  for (const auto feasible : m_feasibility_info) {
     if (feasible >= 0) {
       actions.push_back(action_idx);
     }
@@ -70,7 +68,7 @@ auto State::transition(Action action_idx) noexcept -> float {
   assert(action_idx < action_count);
   assert(!m_items.front().placed);
 
-  std::rotate(m_items.begin(), m_items.begin() + 1, m_items.end());
+  std::ranges::rotate(m_items, m_items.begin() + 1);
   Item& selected_item = m_items.back();
   selected_item.placed = true;
 
@@ -86,11 +84,10 @@ auto State::transition(Action action_idx) noexcept -> float {
 
   update_feasibility_info(m_items.front());
 
-  auto used_items_count = std::ranges::count(m_items, true, [](const Item& item) {
-    return item.volume() > 0 && item.placed;
-  });
-  auto reward_scaling = max_item_count * (max_item_count + 1) / 2;
-  float reward = static_cast<float>(used_items_count) / reward_scaling;
+  constexpr auto reward_scaling = max_item_count * (max_item_count + 1) / 2;
+  const auto used_items_count =
+    std::ranges::count(m_items, true, [](const Item& item) { return item.volume() > 0 && item.placed; });
+  const auto reward = static_cast<float>(used_items_count) / reward_scaling;
   return reward;
 }
 
@@ -101,8 +98,7 @@ auto State::update_feasibility_info(const Item& item) noexcept -> void {
   auto max_height_arr = get_2d_window_max_in_box(m_height_map, item.shape.x, item.shape.y);
   for (size_t x = 0; x <= m_feasibility_info.shape[0] - item.shape.x; ++x) {
     for (size_t y = 0; y <= m_feasibility_info.shape[1] - item.shape.y; ++y) {
-      auto max_height = max_height_arr[x, y];
-      if (max_height + item.shape.z <= static_cast<int8_t>(bin_height)) {
+      if (const auto max_height = max_height_arr[x, y]; max_height + item.shape.z <= static_cast<int8_t>(bin_height)) {
         m_feasibility_info[x, y] = static_cast<int8_t>(max_height);
       }
     }

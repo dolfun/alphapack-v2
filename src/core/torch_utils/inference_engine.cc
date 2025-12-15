@@ -23,13 +23,13 @@ InferenceEngine::InferenceEngine(InferenceModel model, size_t stream_pool_size)
 }
 
 auto InferenceEngine::get_next_stream() noexcept -> at::cuda::CUDAStream {
-  size_t idx = m_curr_stream_idx.fetch_add(1, std::memory_order_relaxed);
+  const auto idx = m_curr_stream_idx.fetch_add(1, std::memory_order_relaxed);
   return m_streams[idx % m_streams.size()];
 }
 
 auto InferenceEngine::run(const InferenceInfo& input) -> InferenceResult {
   try {
-    auto stream = get_next_stream();
+    const auto stream = get_next_stream();
     at::cuda::CUDAStreamGuard stream_guard{stream};
 
     m_model.infer(input);

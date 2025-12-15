@@ -32,15 +32,13 @@ TEST_CASE("NdArray: Compile-time properties", "[NdArray][Static]") {
 
 TEST_CASE("NdArray: Construction and Factory", "[NdArray][Construction]") {
   SECTION("Default construction initializes to zero") {
-    constexpr NdArray<int, 2, 2> arr{};
-    for (auto val : arr) {
+    for (constexpr NdArray<int, 2, 2> arr{}; const auto val : arr) {
       REQUIRE(val == 0);
     }
   }
 
   SECTION("Factory make_ndarray initialization") {
-    constexpr auto arr = make_ndarray<int, 2, 2>(42);
-    for (auto val : arr) {
+    for (constexpr auto arr = make_ndarray<int, 2, 2>(42); const auto val : arr) {
       REQUIRE(val == 42);
     }
   }
@@ -48,7 +46,7 @@ TEST_CASE("NdArray: Construction and Factory", "[NdArray][Construction]") {
   SECTION("Manual Fill") {
     NdArray<int, 2, 2> arr{};
     arr.fill(10);
-    for (auto val : arr) {
+    for (const auto val : arr) {
       REQUIRE(val == 10);
     }
   }
@@ -92,14 +90,14 @@ TEST_CASE("NdArray: Deducing this correctness", "[NdArray][ConstCorrectness]") {
     REQUIRE(mut_mat[0, 0] == 5);
   }
 
-  const auto const_mat = make_ndarray<int, 2, 2>(2);
+  constexpr auto const_mat = make_ndarray<int, 2, 2>(2);
   SECTION("Const lvalue reference returns const reference") {
     static_assert(std::is_same_v<decltype(const_mat[0, 0]), const int&>);
     REQUIRE(const_mat[0, 0] == 2);
   }
 
   SECTION("R-value access interaction") {
-    auto val = make_ndarray<int, 2, 2>(99)[0, 0];
+    constexpr auto val = make_ndarray<int, 2, 2>(99)[0, 0];
     REQUIRE(val == 99);
   }
 }
@@ -126,14 +124,14 @@ TEST_CASE("NdArray: Iterators", "[NdArray][Iterators]") {
   NdArray<int, 2, 2> arr{};
 
   SECTION("Standard algorithms compatibility") {
-    std::fill(arr.begin(), arr.end(), 7);
-    bool all_seven = std::ranges::all_of(arr, [](int i) { return i == 7; });
+    std::ranges::fill(arr, 7);
+    const bool all_seven = std::ranges::all_of(arr, [](int i) { return i == 7; });
     REQUIRE(all_seven);
   }
 
   SECTION("Range-based for loop") {
     int sum = 0;
-    std::fill(arr.begin(), arr.end(), 1);
+    std::ranges::fill(arr, 1);
 
     for (const auto& val : arr) {
       sum += val;
