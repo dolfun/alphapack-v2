@@ -15,8 +15,8 @@
 #include <vector>
 
 #include "inference_engine.h"
-#include "memory_pool.h"
 #include "model_info.h"
+#include "raw_buffer.h"
 #include "state.h"
 
 using namespace torch_utils;
@@ -121,10 +121,10 @@ int main(int argc, char** argv) {
   const size_t value_bytes_per_batch = value_elements_per_batch * sizeof(float);
 
   try {
-    PinnedMemoryPool image_input_pool{batch_count * image_bytes_per_batch};
-    PinnedMemoryPool additional_input_pool{batch_count * additional_bytes_per_batch};
-    PinnedMemoryPool policy_output_pool{batch_count * policy_bytes_per_batch};
-    PinnedMemoryPool value_output_pool{batch_count * value_bytes_per_batch};
+    PinnedRawBuffer image_input_pool{batch_count * image_bytes_per_batch};
+    PinnedRawBuffer additional_input_pool{batch_count * additional_bytes_per_batch};
+    PinnedRawBuffer policy_output_pool{batch_count * policy_bytes_per_batch};
+    PinnedRawBuffer value_output_pool{batch_count * value_bytes_per_batch};
 
     fill_random(
       static_cast<float*>(image_input_pool.ptr()),

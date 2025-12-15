@@ -1,6 +1,7 @@
 #pragma once
-
-#include <memory>
+#include <ATen/cuda/CUDAEvent.h>
+#include <c10/cuda/CUDAGuard.h>
+#include <c10/cuda/CUDAStream.h>
 
 #include "inference_model.h"
 
@@ -8,37 +9,28 @@ namespace torch_utils {
 
 class InferenceResult {
 public:
-  InferenceResult();
-  ~InferenceResult();
-
-  InferenceResult(const InferenceResult&) = delete;
-  InferenceResult& operator=(const InferenceResult&) = delete;
-  InferenceResult(InferenceResult&&) noexcept;
-  InferenceResult& operator=(InferenceResult&&) noexcept;
-
-  [[nodiscard]] auto is_done() const noexcept -> bool;
+  [[nodiscard]] auto is_done() const noexcept -> bool {
+    return m_event.query();
+  }
 
 private:
   friend class InferenceEngine;
-  struct Impl;
-  std::unique_ptr<Impl> m_pimpl;
+
+  at::cuda::CUDAEvent m_event{cudaEventDisableTiming};
 };
 
 class InferenceEngine {
 public:
-  InferenceEngine(InferenceModel model, size_t pool_size);
-  ~InferenceEngine();
-
-  InferenceEngine(const InferenceEngine&) = delete;
-  InferenceEngine& operator=(const InferenceEngine&) = delete;
-  InferenceEngine(InferenceEngine&&) = delete;
-  InferenceEngine& operator=(InferenceEngine&&) = delete;
+  InferenceEngine(InferenceModel model, size_t stream_pool_size);
 
   [[nodiscard]] auto run(const InferenceInfo&) -> InferenceResult;
 
 private:
-  struct Impl;
-  std::unique_ptr<Impl> m_pimpl;
+  [[nodiscard]] auto get_next_stream() noexcept -> at::cuda::CUDAStream;
+
+  InferenceModel m_model;
+  std::atomic<size_t> m_curr_stream_idx;
+  std::vector<at::cuda::CUDAStream> m_streams;
 };
 
 }  // namespace torch_utils
