@@ -15,15 +15,15 @@
 #include <vector>
 
 #include "inference_engine.h"
+#include "memory_block_pool.h"
 #include "model_info.h"
-#include "raw_buffer.h"
 #include "state.h"
 
 using namespace torch_utils;
 using namespace mcts;
 
-constexpr int64_t batch_count = 128;
-constexpr int64_t run_size = 10000;
+constexpr size_t batch_count = 128;
+constexpr size_t run_size = 10000;
 
 auto read_file(const std::string& path) -> std::string {
   std::ifstream file(path, std::ios::binary);
@@ -121,20 +121,16 @@ int main(int argc, char** argv) {
   const size_t value_bytes_per_batch = value_elements_per_batch * sizeof(float);
 
   try {
-    PinnedRawBuffer image_input_pool{batch_count * image_bytes_per_batch};
-    PinnedRawBuffer additional_input_pool{batch_count * additional_bytes_per_batch};
-    PinnedRawBuffer policy_output_pool{batch_count * policy_bytes_per_batch};
-    PinnedRawBuffer value_output_pool{batch_count * value_bytes_per_batch};
+    using PinnedPool = PinnedMemoryPool<alignof(std::max_align_t)>;
+    PinnedPool image_input_pool{image_bytes_per_batch, batch_count};
+    PinnedPool additional_input_pool{additional_bytes_per_batch, batch_count};
+    PinnedPool policy_output_pool{policy_bytes_per_batch, batch_count};
+    PinnedPool value_output_pool{value_bytes_per_batch, batch_count};
 
-    fill_random(
-      static_cast<float*>(image_input_pool.ptr()),
-      batch_count * image_elements_per_batch
-    );
-
-    fill_random(
-      static_cast<float*>(additional_input_pool.ptr()),
-      batch_count * additional_elements_per_batch
-    );
+    for (size_t i = 0; i < static_cast<size_t>(batch_count); ++i) {
+      fill_random(static_cast<float*>(image_input_pool[i]), image_elements_per_batch);
+      fill_random(static_cast<float*>(additional_input_pool[i]), additional_elements_per_batch);
+    }
 
     std::ifstream file{model_path, std::ios::binary};
     if (!file) {
@@ -165,20 +161,16 @@ int main(int argc, char** argv) {
         InferenceInfo info{
           .image_input_shape =
             {batch_size, ModelInfo::input_feature_count, State::bin_length, State::bin_length},
-          .image_input_ptr =
-            static_cast<char*>(image_input_pool.ptr()) + (slot * image_bytes_per_batch),
+          .image_input_ptr = image_input_pool[slot],
 
           .additional_input_shape = {batch_size, ModelInfo::additional_input_count},
-          .additional_input_ptr =
-            static_cast<char*>(additional_input_pool.ptr()) + (slot * additional_bytes_per_batch),
+          .additional_input_ptr = additional_input_pool[slot],
 
           .policy_output_shape = {batch_size, bin_size},
-          .policy_output_ptr =
-            static_cast<char*>(policy_output_pool.ptr()) + (slot * policy_bytes_per_batch),
+          .policy_output_ptr = policy_output_pool[slot],
 
           .value_output_shape = {batch_size, ModelInfo::value_support_count},
-          .value_output_ptr =
-            static_cast<char*>(value_output_pool.ptr()) + (slot * value_bytes_per_batch)
+          .value_output_ptr = value_output_pool[slot]
         };
 
         auto start_time = std::chrono::high_resolution_clock::now();

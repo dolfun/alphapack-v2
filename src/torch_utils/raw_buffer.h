@@ -1,69 +1,33 @@
 #pragma once
 #include <cuda_runtime.h>
 
-#include <cassert>
-#include <cstdlib>
+#include <cstddef>
+#include <cstdint>
 #include <new>
 #include <utility>
 
+#include "alloc_fn_utils.h"
+
 namespace torch_utils {
 
-using AllocateFn = void* (*)(size_t);
-using FreeFn = void (*)(void*) noexcept;
-
-namespace detail {
-
-using CudaAllocateFn = cudaError_t (*)(void**, size_t);
-using CudaFreeFn = cudaError_t (*)(void*);
-
-template <CudaAllocateFn allocate_fn>
-consteval inline auto wrap_cuda_allocate_fn() -> AllocateFn {
-  return +[](size_t size) -> void* {
-    void* ptr = nullptr;
-    auto error = allocate_fn(&ptr, size);
-    if (error != cudaSuccess) {
-      throw std::bad_alloc();
-    }
-    return ptr;
-  };
-};
-
-template <CudaFreeFn free_fn>
-consteval inline auto wrap_cuda_free_fn() -> FreeFn {
-  return +[](void* ptr) noexcept {
-    auto error = free_fn(ptr);
-    assert(error == cudaSuccess);
-  };
-}
-
-inline auto global_new_fn(size_t size) -> void* {
-  return ::operator new(size);
-}
-
-inline auto global_delete_fn(void* ptr) noexcept -> void {
-  ::operator delete(ptr);
-}
-
-constexpr inline auto cuda_malloc_host_fn = wrap_cuda_allocate_fn<cudaMallocHost>();
-constexpr inline auto cuda_free_host_fn = wrap_cuda_free_fn<cudaFreeHost>();
-
-constexpr inline auto cuda_malloc_fn = wrap_cuda_allocate_fn<cudaMalloc>();
-constexpr inline auto cuda_free_fn = wrap_cuda_free_fn<cudaFree>();
-
-}  // namespace detail
-
-template <AllocateFn allocate_fn, FreeFn free_fn>
+template <Allocator allocator, size_t alignment = alignof(std::max_align_t)>
+  requires Alignment<alignment>
 class RawBuffer {
 public:
-  explicit RawBuffer(size_t pool_size) : m_pool_size{pool_size}, m_ptr{nullptr} {
-    if (pool_size > 0) {
-      m_ptr = allocate_fn(pool_size);
+  explicit RawBuffer(size_t size) : m_size{size}, m_ptr{nullptr} {
+    if (size > 0) {
+      m_ptr = do_allocate(size);
+
+      if (reinterpret_cast<std::uintptr_t>(m_ptr) % alignment != 0) {
+        do_free(m_ptr);
+        throw std::bad_alloc();
+      }
     }
   }
 
   ~RawBuffer() noexcept {
     if (m_ptr) {
-      free_fn(m_ptr);
+      do_free(m_ptr);
     }
   }
 
@@ -71,15 +35,14 @@ public:
   RawBuffer& operator=(const RawBuffer&) = delete;
 
   RawBuffer(RawBuffer&& other) noexcept
-      : m_pool_size{std::exchange(other.m_pool_size, 0)},
-        m_ptr{std::exchange(other.m_ptr, nullptr)} {}
+      : m_size{std::exchange(other.m_size, 0)}, m_ptr{std::exchange(other.m_ptr, nullptr)} {}
 
   RawBuffer& operator=(RawBuffer&& other) noexcept {
     if (this != &other) {
       if (m_ptr) {
-        free_fn(m_ptr);
+        do_free(m_ptr);
       }
-      m_pool_size = std::exchange(other.m_pool_size, 0);
+      m_size = std::exchange(other.m_size, 0);
       m_ptr = std::exchange(other.m_ptr, nullptr);
     }
 
@@ -88,7 +51,7 @@ public:
 
   void swap(RawBuffer& other) noexcept {
     using std::swap;
-    swap(m_pool_size, other.m_pool_size);
+    swap(m_size, other.m_size);
     swap(m_ptr, other.m_ptr);
   }
 
@@ -105,16 +68,24 @@ public:
   }
 
   [[nodiscard]] auto size() const noexcept -> size_t {
-    return m_pool_size;
+    return m_size;
   }
 
 private:
-  size_t m_pool_size;
+  static auto do_allocate(size_t size) -> void* {
+    return allocator.allocate(size, static_cast<std::align_val_t>(alignment));
+  }
+
+  static auto do_free(void* ptr) noexcept -> void {
+    allocator.free(ptr, static_cast<std::align_val_t>(alignment));
+  }
+
+  size_t m_size;
   void* m_ptr;
 };
 
-using DefaultRawBuffer = RawBuffer<detail::global_new_fn, detail::global_delete_fn>;
-using PinnedRawBuffer = RawBuffer<detail::cuda_malloc_host_fn, detail::cuda_free_host_fn>;
-using CudaRawBuffer = RawBuffer<detail::cuda_malloc_fn, detail::cuda_free_fn>;
+using DefaultRawBuffer = RawBuffer<global_alloc_free_pair>;
+using PinnedRawBuffer = RawBuffer<cuda_host_alloc_free_pair>;
+using CudaRawBuffer = RawBuffer<cuda_alloc_free_pair>;
 
 }  // namespace torch_utils
