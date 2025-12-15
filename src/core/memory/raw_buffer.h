@@ -77,7 +77,7 @@ private:
     allocator.free(ptr, static_cast<std::align_val_t>(alignment));
   }
 
-  size_t m_size;
+  const size_t m_size;
   void* m_ptr;
 };
 

@@ -45,7 +45,7 @@ auto State::packing_efficiency() const noexcept -> float {
   auto get_packed_volume = [](const Item& item) { return item.placed ? item.volume() : 0u; };
   const auto packed_volume =
     std::ranges::fold_left(m_items | std::views::transform(get_packed_volume), 0u, std::plus<>{});
-  constexpr auto bin_volume = bin_length * bin_length * bin_height;
+  constexpr auto bin_volume = bin_base_size * bin_height;
   return static_cast<float>(packed_volume) / bin_volume;
 }
 

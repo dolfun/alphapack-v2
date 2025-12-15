@@ -25,6 +25,7 @@ public:
   static constexpr size_t max_item_count = 64;
   static constexpr size_t bin_length = 10;
   static constexpr size_t bin_height = 10;
+  static constexpr size_t bin_base_size = bin_length * bin_length;
   static constexpr uint8_t action_count = bin_length * bin_length;
 
   template <typename T>
