@@ -7,7 +7,7 @@
 #include <functional>
 #include <ranges>
 
-namespace mcts {
+namespace alpack {
 
 template <typename T, size_t box_n, size_t box_m>
 constexpr auto
@@ -109,4 +109,4 @@ auto State::update_feasibility_info(const Item& item) noexcept -> void {
   }
 }
 
-}  // namespace mcts
+}  // namespace alpack

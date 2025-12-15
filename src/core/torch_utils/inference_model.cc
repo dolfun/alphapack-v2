@@ -1,11 +1,15 @@
 #include "inference_model.h"
 
+// Do something about this?
+#pragma warning(push)
+#pragma warning(disable : 4267 4702)
 #include <torch/script.h>
+#pragma warning(pop)
 
 #include <cassert>
 #include <sstream>
 
-namespace torch_utils {
+namespace alpack {
 
 struct InferenceModel::Impl {
   torch::jit::Module m_model;
@@ -67,4 +71,4 @@ auto InferenceModel::infer(const InferenceInfo& info) -> void {
   value_output_cpu.copy_(value_output_gpu, true);
 }
 
-}  // namespace torch_utils
+}  // namespace alpack

@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace mcts {
+namespace alpack {
 
 template <typename T, size_t... Dimensions>
   requires(std::is_arithmetic_v<T> && sizeof...(Dimensions) > 0 && ((Dimensions > 0) && ...))
@@ -66,4 +66,4 @@ constexpr inline auto make_ndarray(T val = {}) {
   return arr;
 }
 
-}  // namespace mcts
+}  // namespace alpack

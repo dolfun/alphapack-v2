@@ -2,10 +2,9 @@
 #include <ATen/cuda/CUDAEvent.h>
 #include <c10/cuda/CUDAGuard.h>
 #include <c10/cuda/CUDAStream.h>
+#include <core/torch_utils/inference_model.h>
 
-#include "inference_model.h"
-
-namespace torch_utils {
+namespace alpack {
 
 class InferenceResult {
 public:
@@ -33,4 +32,4 @@ private:
   std::vector<at::cuda::CUDAStream> m_streams;
 };
 
-}  // namespace torch_utils
+}  // namespace alpack

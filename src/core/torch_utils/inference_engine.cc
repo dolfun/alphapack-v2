@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-namespace torch_utils {
+namespace alpack {
 
 InferenceEngine::InferenceEngine(InferenceModel model, size_t stream_pool_size)
     : m_model{std::move(model)}, m_curr_stream_idx{0} {
@@ -44,4 +44,4 @@ auto InferenceEngine::run(const InferenceInfo& input) -> InferenceResult {
   }
 }
 
-}  // namespace torch_utils
+}  // namespace alpack

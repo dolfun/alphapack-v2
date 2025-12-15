@@ -1,3 +1,8 @@
+#include <core/mcts/model_info.h>
+#include <core/state/state.h>
+#include <core/torch_utils/inference_engine.h>
+#include <core/torch_utils/memory.h>
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -14,13 +19,7 @@
 #include <thread>
 #include <vector>
 
-#include "inference_engine.h"
-#include "memory_block_pool.h"
-#include "model_info.h"
-#include "state.h"
-
-using namespace torch_utils;
-using namespace mcts;
+using namespace alpack;
 
 constexpr size_t batch_count = 128;
 constexpr size_t run_size = 10000;
@@ -182,7 +181,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::jthread> threads;
     threads.reserve(thread_count);
-    for (int i = 0; i < thread_count; ++i) {
+    for (size_t i = 0; i < thread_count; ++i) {
       threads.emplace_back(worker_task);
     }
 

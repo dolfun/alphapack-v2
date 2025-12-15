@@ -1,31 +1,31 @@
+#include <core/state/item.h>
+#include <core/state/serializer.h>
+#include <core/state/state.h>
+
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <vector>
 
-#include "item.h"
-#include "serializer.h"
-#include "state.h"
-
-using namespace mcts;
+using namespace alpack;
 
 TEST_CASE("State: Initialization and Validation", "[State][Init]") {
   SECTION("Constructs with valid items") {
-    std::vector<Item> items = { Item::make_item(2, 2, 2) };
+    std::vector<Item> items = {Item::make_item(2, 2, 2)};
     REQUIRE_NOTHROW(State(items));
   }
 
   SECTION("Throws on empty input") {
     std::vector<Item> empty_items;
-    REQUIRE_THROWS_AS(State(empty_items), std::runtime_error);
+    REQUIRE_THROWS_AS(State(empty_items), std::invalid_argument);
   }
 
   SECTION("Throws on too many items") {
     std::vector<Item> too_many(65, Item::make_item(1, 1, 1));
-    REQUIRE_THROWS_AS(State(too_many), std::runtime_error);
+    REQUIRE_THROWS_AS(State(too_many), std::invalid_argument);
   }
 
   SECTION("Initial state consistency") {
-    std::vector<Item> items = { Item::make_item(10, 10, 1) };
+    std::vector<Item> items = {Item::make_item(10, 10, 1)};
     State state(items);
 
     auto& hm = state.height_map();
@@ -41,7 +41,7 @@ TEST_CASE("State: Initialization and Validation", "[State][Init]") {
 
 TEST_CASE("State: Feasibility Logic", "[State][Feasibility]") {
   SECTION("Item fits everywhere (1x1)") {
-    std::vector<Item> items = { Item::make_item(1, 1, 1) };
+    std::vector<Item> items = {Item::make_item(1, 1, 1)};
     State state(items);
 
     auto actions = state.feasible_actions();
@@ -51,7 +51,7 @@ TEST_CASE("State: Feasibility Logic", "[State][Feasibility]") {
   }
 
   SECTION("Item fits exactly (10x10)") {
-    std::vector<Item> items = { Item::make_item(10, 10, 1) };
+    std::vector<Item> items = {Item::make_item(10, 10, 1)};
     State state(items);
 
     auto actions = state.feasible_actions();
@@ -64,11 +64,11 @@ TEST_CASE("State: Feasibility Logic", "[State][Feasibility]") {
 }
 
 TEST_CASE("State: Transitions and Height Map Updates", "[State][Transition]") {
-  std::vector<Item> items = { Item::make_item(5, 5, 5), Item::make_item(5, 5, 5) };
+  std::vector<Item> items = {Item::make_item(5, 5, 5), Item::make_item(5, 5, 5)};
   State state(items);
 
   SECTION("Placing first item updates height map") {
-    float reward = state.transition(0);
+    (void)state.transition(0);
 
     auto& hm = state.height_map();
     REQUIRE(hm[0, 0] == 5);
@@ -91,7 +91,7 @@ TEST_CASE("State: Transitions and Height Map Updates", "[State][Transition]") {
 }
 
 TEST_CASE("State: Packing Efficiency", "[State][Efficiency]") {
-  std::vector<Item> items = { Item::make_item(10, 10, 5), Item::make_item(1, 1, 1) };
+  std::vector<Item> items = {Item::make_item(10, 10, 5), Item::make_item(1, 1, 1)};
   State state(items);
 
   REQUIRE(state.packing_efficiency() == 0.0f);
@@ -100,7 +100,7 @@ TEST_CASE("State: Packing Efficiency", "[State][Efficiency]") {
 }
 
 TEST_CASE("State: Item Rotation and Queue Management", "[State][Queue]") {
-  std::vector<Item> items = { Item::make_item(10, 10, 1), Item::make_item(1, 1, 1) };
+  std::vector<Item> items = {Item::make_item(10, 10, 1), Item::make_item(1, 1, 1)};
   State state(items);
 
   REQUIRE(state.feasible_actions().size() == 1);
@@ -111,7 +111,7 @@ TEST_CASE("State: Item Rotation and Queue Management", "[State][Queue]") {
 }
 
 TEST_CASE("State: Impossible Stacking", "[State][Constraints]") {
-  std::vector<Item> items = { Item::make_item(5, 5, 6), Item::make_item(5, 5, 5) };
+  std::vector<Item> items = {Item::make_item(5, 5, 6), Item::make_item(5, 5, 5)};
   State state(items);
   (void)state.transition(0);
   auto actions = state.feasible_actions();
@@ -125,18 +125,18 @@ TEST_CASE("State: Impossible Stacking", "[State][Constraints]") {
 
 TEST_CASE("State: Advanced Input Validation", "[State][Validation]") {
   SECTION("Throws on zero dimensions") {
-    std::vector<Item> items = { Item::make_item(0, 5, 5) };
-    REQUIRE_THROWS_AS(State(items), std::runtime_error);
+    std::vector<Item> items = {Item::make_item(0, 5, 5)};
+    REQUIRE_THROWS_AS(State(items), std::invalid_argument);
   }
 
   SECTION("Throws on dimensions exceeding bin size") {
-    std::vector<Item> items = { Item::make_item(11, 1, 1) };
-    REQUIRE_THROWS_AS(State(items), std::runtime_error);
+    std::vector<Item> items = {Item::make_item(11, 1, 1)};
+    REQUIRE_THROWS_AS(State(items), std::invalid_argument);
   }
 }
 
 TEST_CASE("State: Complex Geometry and Gravity", "[State][Feasibility]") {
-  std::vector<Item> items = { Item::make_item(1, 1, 5), Item::make_item(2, 1, 1) };
+  std::vector<Item> items = {Item::make_item(1, 1, 5), Item::make_item(2, 1, 1)};
   State state(items);
 
   (void)state.transition(0);
@@ -153,7 +153,7 @@ TEST_CASE("State: Complex Geometry and Gravity", "[State][Feasibility]") {
 }
 
 TEST_CASE("State: Multi-Cell Boundary Limits", "[State][Feasibility]") {
-  std::vector<Item> items = { Item::make_item(2, 2, 1) };
+  std::vector<Item> items = {Item::make_item(2, 2, 1)};
   State state(items);
 
   auto mask = state.feasibility_mask();
@@ -176,7 +176,7 @@ TEST_CASE("State: Multi-Cell Boundary Limits", "[State][Feasibility]") {
 }
 
 TEST_CASE("State: Reward Calculation", "[State][Reward]") {
-  std::vector<Item> items = { Item::make_item(1, 1, 1), Item::make_item(1, 1, 1) };
+  std::vector<Item> items = {Item::make_item(1, 1, 1), Item::make_item(1, 1, 1)};
   State state(items);
 
   float scaling = 64.0f * 65.0f / 2.0f;
@@ -189,7 +189,7 @@ TEST_CASE("State: Reward Calculation", "[State][Reward]") {
 }
 
 TEST_CASE("State: Copy Independence", "[State][Copy]") {
-  std::vector<Item> items = { Item::make_item(5, 5, 5), Item::make_item(5, 5, 5) };
+  std::vector<Item> items = {Item::make_item(5, 5, 5), Item::make_item(5, 5, 5)};
   State s1(items);
   (void)s1.transition(0);
 
@@ -204,7 +204,7 @@ TEST_CASE("State: Copy Independence", "[State][Copy]") {
 
 TEST_CASE("State: Serialization Round-Trip", "[State][Serializer]") {
   SECTION("Serialize and restore initial state") {
-    std::vector<Item> items = { Item::make_item(2, 2, 2), Item::make_item(1, 1, 1) };
+    std::vector<Item> items = {Item::make_item(2, 2, 2), Item::make_item(1, 1, 1)};
     State original_state(items);
 
     std::string bytes = Serializer<State>::serialize(original_state);
@@ -222,7 +222,7 @@ TEST_CASE("State: Serialization Round-Trip", "[State][Serializer]") {
   }
 
   SECTION("Serialize and restore partially packed state") {
-    std::vector<Item> items = { Item::make_item(5, 5, 5), Item::make_item(2, 2, 1) };
+    std::vector<Item> items = {Item::make_item(5, 5, 5), Item::make_item(2, 2, 1)};
     State original_state(items);
 
     (void)original_state.transition(0);
@@ -255,12 +255,12 @@ TEST_CASE("State: Serialization Round-Trip", "[State][Serializer]") {
       REQUIRE(actions_rest.back() == actions_orig.back());
     }
 
-    float reward_rest = restored_state.transition(actions_rest[0]);
+    (void)restored_state.transition(actions_rest[0]);
     REQUIRE(restored_state.height_map()[0, 0] == 6);
   }
 
   SECTION("Byte-level consistency") {
-    std::vector<Item> items = { Item::make_item(1, 1, 1) };
+    std::vector<Item> items = {Item::make_item(1, 1, 1)};
     State s1(items);
     State s2(items);
 

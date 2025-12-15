@@ -1,17 +1,13 @@
 #pragma once
+#include <core/memory/alloc_fn_utils.h>
+#include <core/memory/memory_block_pool.h>
+#include <core/memory/raw_buffer.h>
 #include <cuda_runtime.h>
 
 #include <cassert>
-#include <cstddef>
 #include <new>
 
-namespace torch_utils {
-
-using AllocateFn = void* (*)(size_t, std::align_val_t);
-using FreeFn = void (*)(void*, std::align_val_t) noexcept;
-
-template <size_t alignment>
-concept Alignment = (alignment > 0 && (alignment & (alignment - 1)) == 0);
+namespace alpack {
 
 namespace detail {
 
@@ -30,21 +26,8 @@ inline auto cuda_alloc_wrapper(size_t size, std::align_val_t) -> void* {
 
 template <CudaFreeFn free_fn>
 inline auto cuda_free_wrapper(void* ptr, std::align_val_t) noexcept -> void {
-  auto error = free_fn(ptr);
-  assert(error == cudaSuccess);
+  free_fn(ptr);  // can return error
 }
-
-}  // namespace detail
-
-struct Allocator {
-  AllocateFn allocate;
-  FreeFn free;
-};
-
-constexpr inline Allocator global_alloc_free_pair{
-  .allocate = (::operator new),
-  .free = (::operator delete)
-};
 
 constexpr inline Allocator cuda_host_alloc_free_pair{
   .allocate = detail::cuda_alloc_wrapper<cudaMallocHost>,
@@ -56,4 +39,15 @@ constexpr inline Allocator cuda_alloc_free_pair{
   .free = detail::cuda_free_wrapper<cudaFree>
 };
 
-}  // namespace torch_utils
+}  // namespace detail
+
+using PinnedRawBuffer = RawBuffer<detail::cuda_host_alloc_free_pair>;
+using CudaRawBuffer = RawBuffer<detail::cuda_alloc_free_pair>;
+
+template <size_t alignment>
+using PinnedMemoryPool = MemoryBlockPool<detail::cuda_host_alloc_free_pair, alignment>;
+
+template <size_t alignment>
+using CudaMemoryPool = MemoryBlockPool<detail::cuda_alloc_free_pair, alignment>;
+
+};  // namespace alpack

@@ -1,5 +1,5 @@
 pybind11_add_module(alphapack bindings.cc)
-target_link_libraries(alphapack PRIVATE mcts)
+target_link_libraries(alphapack PRIVATE project_options state mcts)
 
 set(MODULE_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/src/alphapack/bindings)
 set_target_properties(

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace mcts {
+namespace alpack {
 
 template <typename T>
 struct Vec3 {
@@ -22,4 +22,4 @@ struct Item {
   }
 };
 
-}  // namespace mcts
+}  // namespace alpack

@@ -1,12 +1,11 @@
 #pragma once
+#include <core/memory/alloc_fn_utils.h>
+#include <core/memory/raw_buffer.h>
+
 #include <cassert>
-#include <cstddef>
 #include <type_traits>
 
-#include "alloc_fn_utils.h"
-#include "raw_buffer.h"
-
-namespace torch_utils {
+namespace alpack {
 
 template <Allocator allocator, size_t alignment>
   requires Alignment<alignment>
@@ -59,10 +58,4 @@ private:
 template <size_t alignment>
 using DefaultMemoryPool = MemoryBlockPool<global_alloc_free_pair, alignment>;
 
-template <size_t alignment>
-using PinnedMemoryPool = MemoryBlockPool<cuda_host_alloc_free_pair, alignment>;
-
-template <size_t alignment>
-using CudaMemoryPool = MemoryBlockPool<cuda_alloc_free_pair, alignment>;
-
-}  // namespace torch_utils
+}  // namespace alpack

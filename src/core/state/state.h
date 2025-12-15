@@ -1,4 +1,7 @@
 #pragma once
+#include <core/state/item.h>
+#include <core/state/ndarray.h>
+
 #include <algorithm>
 #include <array>
 #include <concepts>
@@ -9,10 +12,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "item.h"
-#include "ndarray.h"
-
-namespace mcts {
+namespace alpack {
 
 template <typename T>
 class Serializer;
@@ -102,4 +102,4 @@ inline auto State::feasibility_info() const noexcept -> const FeasibilityInfo& {
   return m_feasibility_info;
 }
 
-}  // namespace mcts
+}  // namespace alpack

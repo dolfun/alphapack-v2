@@ -1,11 +1,10 @@
 #pragma once
-
 #include <array>
 #include <istream>
 #include <memory>
 #include <string>
 
-namespace torch_utils {
+namespace alpack {
 
 struct InferenceInfo {
   std::array<int64_t, 4> image_input_shape;
@@ -40,4 +39,4 @@ private:
   std::unique_ptr<Impl> m_pimpl;
 };
 
-}  // namespace torch_utils
+}  // namespace alpack

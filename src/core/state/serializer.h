@@ -1,12 +1,12 @@
 #pragma once
+#include <core/state/state.h>
+
 #include <cstring>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "state.h"
-
-namespace mcts {
+namespace alpack {
 
 template <typename T>
 class Serializer;
@@ -54,4 +54,4 @@ public:
   };
 };
 
-};  // namespace mcts
+};  // namespace alpack

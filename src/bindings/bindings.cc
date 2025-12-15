@@ -1,13 +1,12 @@
+#include <core/mcts/model_info.h>
+#include <core/state/serializer.h>
+#include <core/state/state.h>
 #include <pybind11/pybind11.h>
 
 #include <ranges>
 
-#include "model_info.h"
-#include "serializer.h"
-#include "state.h"
-
 namespace py = pybind11;
-using namespace mcts;
+using namespace alpack;
 
 template <typename ArrayT>
 constexpr auto bind_ndarray(py::module_& m, const char* name) -> void {

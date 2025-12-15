@@ -1,11 +1,11 @@
+#include <core/state/ndarray.h>
+
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <numeric>
 #include <type_traits>
 
-#include "ndarray.h"
-
-using namespace mcts;
+using namespace alpack;
 
 TEST_CASE("NdArray: Compile-time properties", "[NdArray][Static]") {
   SECTION("1D Array properties") {

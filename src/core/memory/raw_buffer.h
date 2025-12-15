@@ -1,14 +1,11 @@
 #pragma once
-#include <cuda_runtime.h>
+#include <core/memory/alloc_fn_utils.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <new>
 #include <utility>
 
-#include "alloc_fn_utils.h"
-
-namespace torch_utils {
+namespace alpack {
 
 template <Allocator allocator, size_t alignment = alignof(std::max_align_t)>
   requires Alignment<alignment>
@@ -85,7 +82,5 @@ private:
 };
 
 using DefaultRawBuffer = RawBuffer<global_alloc_free_pair>;
-using PinnedRawBuffer = RawBuffer<cuda_host_alloc_free_pair>;
-using CudaRawBuffer = RawBuffer<cuda_alloc_free_pair>;
 
-}  // namespace torch_utils
+}  // namespace alpack
