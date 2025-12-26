@@ -1,6 +1,6 @@
 add_library(
   torch_utils
-  memory.h
+  allocator.h
   inference_model.h
   inference_model.cc
   inference_engine.h

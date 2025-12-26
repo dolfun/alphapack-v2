@@ -1,9 +1,9 @@
 add_library(
   memory
   INTERFACE
-  alloc_fn_utils.h
-  memory_block_pool.h
-  raw_buffer.h
+  allocator.h
+  storage_buffer.h
+  trivial_object_pool.h
 )
 
 target_link_libraries(memory INTERFACE project_options)
