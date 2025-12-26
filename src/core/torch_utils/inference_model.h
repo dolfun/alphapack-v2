@@ -1,22 +1,23 @@
 #pragma once
 #include <array>
 #include <memory>
+#include <span>
 #include <string>
 
 namespace alpack {
 
 struct InferenceInfo {
+  std::span<float> image_input;
   std::array<int64_t, 4> image_input_shape;
-  void* image_input_ptr;
 
+  std::span<float> additional_input;
   std::array<int64_t, 2> additional_input_shape;
-  void* additional_input_ptr;
 
+  std::span<float> policy_output;
   std::array<int64_t, 2> policy_output_shape;
-  void* policy_output_ptr;
 
+  std::span<float> value_output;
   std::array<int64_t, 2> value_output_shape;
-  void* value_output_ptr;
 };
 
 class InferenceModel {

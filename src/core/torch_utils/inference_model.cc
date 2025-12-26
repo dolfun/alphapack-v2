@@ -40,11 +40,12 @@ auto InferenceModel::infer(const InferenceInfo& info) const -> void {
   const auto options = torch::TensorOptions{}.dtype(torch::kFloat32).device(torch::kCPU).pinned_memory(true);
 
   // Copy input to CPU
-  const auto image_input_cpu = torch::from_blob(info.image_input_ptr, info.image_input_shape, options);
+  const auto image_input_cpu = torch::from_blob(info.image_input.data(), info.image_input_shape, options);
   assert(image_input_cpu.is_pinned());
   auto image_input_gpu = image_input_cpu.to(torch::kCUDA, true);
 
-  const auto additional_input_cpu = torch::from_blob(info.additional_input_ptr, info.additional_input_shape, options);
+  const auto additional_input_cpu =
+    torch::from_blob(info.additional_input.data(), info.additional_input_shape, options);
   assert(additional_input_cpu.is_pinned());
   auto additional_input_gpu = additional_input_cpu.to(torch::kCUDA, true);
 
@@ -59,11 +60,11 @@ auto InferenceModel::infer(const InferenceInfo& info) const -> void {
   const auto value_output_gpu = elements[1].toTensor();
 
   // Copy output to CPU
-  const auto policy_output_cpu = torch::from_blob(info.policy_output_ptr, info.policy_output_shape, options);
+  const auto policy_output_cpu = torch::from_blob(info.policy_output.data(), info.policy_output_shape, options);
   assert(policy_output_cpu.is_pinned());
   (void)policy_output_cpu.copy_(policy_output_gpu, true);
 
-  const auto value_output_cpu = torch::from_blob(info.value_output_ptr, info.value_output_shape, options);
+  const auto value_output_cpu = torch::from_blob(info.value_output.data(), info.value_output_shape, options);
   assert(value_output_cpu.is_pinned());
   (void)value_output_cpu.copy_(value_output_gpu, true);
 }

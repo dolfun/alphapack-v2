@@ -1,16 +1,14 @@
 #pragma once
 #include <ATen/cuda/CUDAEvent.h>
-#include <c10/cuda/CUDAGuard.h>
 #include <c10/cuda/CUDAStream.h>
 #include <core/torch_utils/inference_model.h>
 
 namespace alpack {
 
-class InferenceResult {
+class InferenceCallback {
 public:
-  [[nodiscard]] auto is_done() const noexcept -> bool {
-    return m_event.query();
-  }
+  void (*func)(void*){};
+  void* data{};
 
 private:
   friend class InferenceEngine;
@@ -20,16 +18,15 @@ private:
 
 class InferenceEngine {
 public:
-  InferenceEngine(InferenceModel model, size_t stream_pool_size);
+  InferenceEngine(InferenceModel model, std::size_t stream_pool_size);
 
-  [[nodiscard]] auto run(const InferenceInfo&) -> InferenceResult;
+  auto run(const InferenceInfo&, InferenceCallback&) -> void;
 
 private:
-  [[nodiscard]] auto get_next_stream() noexcept -> at::cuda::CUDAStream;
-
   InferenceModel m_model;
-  std::atomic<size_t> m_curr_stream_idx;
-  std::vector<at::cuda::CUDAStream> m_streams;
+  std::atomic<std::size_t> m_curr_stream_idx;
+  at::cuda::CUDAStream m_notify_stream;
+  std::vector<at::cuda::CUDAStream> m_worker_streams;
 };
 
 }  // namespace alpack
