@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
-#include <cstdint>
 #include <format>
 #include <limits>
 #include <ranges>
@@ -22,22 +21,26 @@ concept RangeOf = std::ranges::input_range<R> && std::convertible_to<std::ranges
 
 class State {
 public:
-  static constexpr size_t max_item_count = 64;
-  static constexpr size_t bin_length = 10;
-  static constexpr size_t bin_height = 10;
-  static constexpr size_t bin_base_size = bin_length * bin_length;
-  static constexpr uint8_t action_count = bin_length * bin_length;
+  static constexpr std::size_t max_item_count = 64;
+  static constexpr std::size_t bin_length = 10;
+  static constexpr std::size_t bin_height = 10;
+  static constexpr std::size_t bin_base_size = bin_length * bin_length;
+  static constexpr std::size_t action_count = bin_length * bin_length;
+  static constexpr std::size_t invalid_feasible_height = std::numeric_limits<std::uint8_t>::max();
+
+  static_assert(bin_length < std::numeric_limits<std::uint8_t>::max());
+  static_assert(2 * bin_height < std::numeric_limits<std::uint8_t>::max());
 
   template <typename T>
   using Array2D = NdArray<T, bin_length, bin_length>;
 
   using Items = std::array<Item, max_item_count>;
-  using HeightMap = Array2D<uint8_t>;
-  using FeasibilityInfo = Array2D<int8_t>;
+  using HeightMap = Array2D<std::uint8_t>;
+  using FeasibilityInfo = Array2D<std::uint8_t>;
   using FeasibilityMask = Array2D<bool>;
 
-  using Action = uint8_t;
-  static_assert(std::numeric_limits<Action>::max() >= action_count - 1);
+  using Action = std::uint8_t;
+  static_assert(action_count < std::numeric_limits<Action>::max());
 
   template <RangeOf<Item> ItemRange>
   explicit State(const ItemRange&);
@@ -50,13 +53,13 @@ public:
   [[nodiscard]] auto packing_efficiency() const noexcept -> float;
   [[nodiscard]] auto feasible_actions() const noexcept -> std::vector<Action>;
 
-  [[nodiscard]] auto transition(Action) noexcept -> float;
+  [[nodiscard]] auto transition(Action) -> float;
 
 private:
   State() = default;
   friend class Serializer<State>;
 
-  auto update_feasibility_info(const Item&) noexcept -> void;
+  auto update_feasibility_info_with_front_item() noexcept -> void;
 
   Items m_items{};
   HeightMap m_height_map{};
@@ -84,10 +87,10 @@ State::State(const ItemRange& items) {
     }
   });
 
-  update_feasibility_info(*std::ranges::begin(items));
-
   auto it = std::ranges::copy(items, m_items.begin()).out;
   std::ranges::for_each(it, m_items.end(), [](Item& item) { item.placed = true; });
+
+  update_feasibility_info_with_front_item();
 }
 
 inline auto State::items() const noexcept -> const Items& {
