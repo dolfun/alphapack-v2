@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from .bindings import ModelInfo
+
+from .bindings import ModelAdapter
 
 
 class GlobalPoolingLayer(nn.Module):
@@ -184,9 +185,9 @@ class PolicyValueNetwork(nn.Module):
     c_pool: int = 16,
     c_head: int = 16,
     c_val: int = 128,
-    input_feature_count: int = ModelInfo.input_feature_count,
-    additional_input_count: int = ModelInfo.additional_input_count,
-    value_support_count: int = ModelInfo.value_support_count
+    input_feature_count: int = ModelAdapter.input_feature_count,
+    additional_input_count: int = ModelAdapter.additional_input_count,
+    value_support_count: int = ModelAdapter.value_support_count
   ) -> None:
     super().__init__()
 

@@ -1,3 +1,3 @@
-add_library(mcts INTERFACE model_info.h)
+add_library(mcts model_adapter.h model_adapter.cc)
 
-target_link_libraries(mcts INTERFACE project_options)
+target_link_libraries(mcts PRIVATE project_options torch_utils)

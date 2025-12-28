@@ -1,4 +1,4 @@
-#include <core/mcts/model_info.h>
+#include <core/mcts/model_adapter.h>
 #include <core/state/serializer.h>
 #include <core/state/state.h>
 #include <pybind11/pybind11.h>
@@ -25,11 +25,12 @@ constexpr auto bind_ndarray(py::module_& m, const char* name) -> void {
 
 PYBIND11_MODULE(alphapack, m) {
   // Vec3i
-  py::class_<Vec3<int>>(m, "Vec3i")
-    .def(py::init<int, int, int>(), py::arg("x"), py::arg("y"), py::arg("z"))
-    .def_readwrite("x", &Vec3<int>::x)
-    .def_readwrite("y", &Vec3<int>::y)
-    .def_readwrite("z", &Vec3<int>::z);
+  using shape_type = Item::shape_type;
+  py::class_<Vec3<shape_type>>(m, "Vec3i")
+    .def(py::init<shape_type, shape_type, shape_type>(), py::arg("x"), py::arg("y"), py::arg("z"))
+    .def_readwrite("x", &Vec3<shape_type>::x)
+    .def_readwrite("y", &Vec3<shape_type>::y)
+    .def_readwrite("z", &Vec3<shape_type>::z);
 
   // Item
   py::class_<Item>(m, "Item")
@@ -38,7 +39,6 @@ PYBIND11_MODULE(alphapack, m) {
     .def_readwrite("placed", &Item::placed);
 
   // NdArray
-  bind_ndarray<State::Array2D<int8_t>>(m, "Array2Dint8");
   bind_ndarray<State::Array2D<uint8_t>>(m, "Array2Duint8");
   bind_ndarray<State::Array2D<bool>>(m, "Array2Dbool");
 
@@ -63,9 +63,14 @@ PYBIND11_MODULE(alphapack, m) {
       )
     );
 
-  // ModelInfo
-  py::class_<ModelInfo>(m, "ModelInfo")
-    .def_readonly_static("input_feature_count", &ModelInfo::input_feature_count)
-    .def_readonly_static("additional_input_count", &ModelInfo::additional_input_count)
-    .def_readonly_static("value_support_count", &ModelInfo::value_support_count);
+  // ModelAdapter
+  py::class_<ModelAdapter>(m, "ModelAdapter")
+    .def_readonly_static("input_feature_count", &ModelAdapter::input_feature_count)
+    .def_readonly_static("additional_input_count", &ModelAdapter::additional_input_count)
+    .def_readonly_static("value_support_count", &ModelAdapter::value_support_count)
+    .def_readonly_static("image_input_size", &ModelAdapter::image_input_size)
+    .def_readonly_static("additional_input_size", &ModelAdapter::additional_input_size)
+    .def_readonly_static("priors_output_size", &ModelAdapter::value_support_count)
+    .def_readonly_static("value_output_size", &ModelAdapter::value_output_size)
+    .def_readonly_static("transform_count", &ModelAdapter::transform_count);
 }

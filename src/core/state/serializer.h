@@ -16,8 +16,8 @@ public:
   static auto serialize(const State& state) -> std::string {
     std::pair<const void*, std::size_t> buffer_infos[3] = {
       {state.m_items.data(), sizeof(Item) * state.m_items.size()},
-      {state.m_height_map.data(), sizeof(int8_t) * state.m_height_map.nbytes},
-      {state.m_feasibility_info.data(), sizeof(int8_t) * state.m_feasibility_info.nbytes}
+      {state.m_height_map.data(), state.m_height_map.nbytes},
+      {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}
     };
 
     std::size_t total_size = 0;
@@ -39,8 +39,8 @@ public:
     State state{};
     std::pair<void*, std::size_t> buffer_infos[3] = {
       {state.m_items.data(), sizeof(Item) * state.m_items.size()},
-      {state.m_height_map.data(), sizeof(int8_t) * state.m_height_map.nbytes},
-      {state.m_feasibility_info.data(), sizeof(int8_t) * state.m_feasibility_info.nbytes}
+      {state.m_height_map.data(), state.m_height_map.nbytes},
+      {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}
     };
 
     std::size_t offset = 0;
