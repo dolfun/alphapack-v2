@@ -7,10 +7,10 @@
 namespace alpack {
 
 template <typename Object, Allocator Alloc = DefaultAllocator>
-  requires std::is_trivial_v<Object>
-class TrivialObjectPool {
+  requires std::is_trivially_default_constructible_v<Object> && std::is_trivially_copyable_v<Object>
+class ObjectPool {
 public:
-  explicit TrivialObjectPool(std::size_t size) : m_size{size}, m_storage{m_size * sizeof(Object)} {
+  explicit ObjectPool(std::size_t size) : m_size{size}, m_storage{m_size * sizeof(Object)} {
     m_ptr = new (m_storage.ptr()) Object[m_size];
   }
 
