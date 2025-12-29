@@ -1,5 +1,5 @@
 add_library(
-  torch_utils
+  inference
   allocator.h
   inference_model.h
   inference_model.cc
@@ -7,9 +7,9 @@ add_library(
   inference_engine.cc
 )
 
-target_link_torch(torch_utils)
+target_link_torch(inference)
 target_link_libraries(
-  torch_utils
+  inference
   PUBLIC memory
   PRIVATE project_options
 )

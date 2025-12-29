@@ -1,7 +1,7 @@
 #pragma once
 #include <ATen/cuda/CUDAEvent.h>
 #include <c10/cuda/CUDAStream.h>
-#include <core/torch_utils/inference_model.h>
+#include <core/inference/inference_model.h>
 
 namespace alpack {
 
