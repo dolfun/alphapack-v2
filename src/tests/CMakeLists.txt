@@ -1,6 +1,10 @@
 add_executable(bm_inference_engine bm_inference_engine.cc)
 target_link_libraries(
-  bm_inference_engine PRIVATE project_options state torch_utils
+  bm_inference_engine
+  PRIVATE project_options
+          state
+          inference
+          mcts
 )
 target_copy_torch_dll(bm_inference_engine)
 

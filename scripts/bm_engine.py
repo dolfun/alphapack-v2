@@ -3,27 +3,27 @@ import csv
 import subprocess
 import sys
 import re
+import itertools
 from pathlib import Path
-
-BATCH_SIZES = [16, 32, 64, 96, 128, 192, 256]
-NUM_RUNS = 4
 
 BATCH_RESULTS_RE = re.compile(
   r"Results \(Batch Size:\s*(\d+)\):\s*"
   r"\n\s*Throughput:\s*([0-9.]+)\s+batches/sec"
   r"\n\s*Time Taken:\s*([0-9.]+)\s+sec"
-  r"\n\s*Avg In-Flight:\s*([0-9.]+)\s+batches"
   r"\n\s*Batch Latency:\s*"
   r"\n\s*Avg:\s*([0-9.]+)\s+ms"
   r"\n\s*Min:\s*([0-9.]+)\s+ms"
   r"\n\s*Max:\s*([0-9.]+)\s+ms"
-  r"\n\s*Std Dev:\s*([0-9.]+)\s+ms", re.MULTILINE
+  r"\n\s*Std Dev:\s*([0-9.]+)\s+ms"
+  r"\n\s*In-Flight Batches:\s*"
+  r"\n\s*Avg\(Meas\.\):\s*([0-9.]+)"
+  r"\n\s*Avg\(Calc\.\):\s*([0-9.]+)"
+  r"\n\s*Max:\s*([0-9.]+)", re.MULTILINE
 )
 
 SINGLE_RESULTS_RE = re.compile(
   r"Results \(Single Evaluation\):\s*"
   r"\n\s*Throughput:\s*([0-9.]+)\s+evals/sec"
-  r"\n\s*Avg In-Flight:\s*([0-9.]+)\s+evals"
   r"\n\s*Latency:\s*"
   r"\n\s*Avg:\s*([0-9.]+)\s+ms", re.MULTILINE
 )
@@ -32,11 +32,11 @@ SINGLE_RESULTS_RE = re.compile(
 def parse_output(output: str, expected_batch_size: int):
   batch_match = BATCH_RESULTS_RE.search(output)
   if not batch_match:
-    raise RuntimeError("Missing batch-size results section.")
+    raise RuntimeError("Missing batch-size results section or format mismatch.")
 
   single_match = SINGLE_RESULTS_RE.search(output)
   if not single_match:
-    raise RuntimeError("Missing single-evaluation results section.")
+    raise RuntimeError("Missing single-evaluation results section or format mismatch.")
 
   batch_size = int(batch_match.group(1))
   if batch_size != expected_batch_size:
@@ -46,14 +46,15 @@ def parse_output(output: str, expected_batch_size: int):
     "batch_size": batch_size,
     "batch_throughput_batches_per_sec": float(batch_match.group(2)),
     "time_taken_sec": float(batch_match.group(3)),
-    "avg_in_flight_batches": float(batch_match.group(4)),
-    "batch_latency_avg_ms": float(batch_match.group(5)),
-    "batch_latency_min_ms": float(batch_match.group(6)),
-    "batch_latency_max_ms": float(batch_match.group(7)),
-    "batch_latency_std_ms": float(batch_match.group(8)),
+    "batch_latency_avg_ms": float(batch_match.group(4)),
+    "batch_latency_min_ms": float(batch_match.group(5)),
+    "batch_latency_max_ms": float(batch_match.group(6)),
+    "batch_latency_std_ms": float(batch_match.group(7)),
+    "avg_in_flight_measured": float(batch_match.group(8)),
+    "avg_in_flight_calculated": float(batch_match.group(9)),
+    "max_in_flight": float(batch_match.group(10)),
     "single_throughput_evals_per_sec": float(single_match.group(1)),
-    "avg_in_flight_evals": float(single_match.group(2)),
-    "single_latency_avg_ms": float(single_match.group(3)),
+    "single_latency_avg_ms": float(single_match.group(2)),
   }
 
 
@@ -70,37 +71,53 @@ def run_benchmark(
   if result.returncode != 0:
     print(result.stdout)
     print(result.stderr, file=sys.stderr)
-    raise RuntimeError("Benchmark failed.")
+    raise RuntimeError(f"Benchmark failed with return code {result.returncode}")
 
   return result.stdout
 
 
 def main():
-  parser = argparse.ArgumentParser()
+  parser = argparse.ArgumentParser(description="Grid search benchmark script.")
   parser.add_argument("--exe", required=True, help="Path to the C++ executable")
   parser.add_argument("--model", required=True, help="Path to the model file")
-  parser.add_argument("--threads", type=int, default=16, help="Number of threads (default: 16)")
-  parser.add_argument("--streams", type=int, default=16, help="Number of streams (default: 16)")
+
+  parser.add_argument(
+    "--batch_sizes", type=int, nargs='+', required=True, help="List of batch sizes (e.g. 16 32 64)"
+  )
+  parser.add_argument("--threads", type=int, nargs='+', required=True, help="List of thread counts")
+  parser.add_argument("--streams", type=int, nargs='+', required=True, help="List of stream counts")
+
+  parser.add_argument(
+    "--runs", type=int, required=True, help="Number of times to repeat each combination"
+  )
   parser.add_argument("--output", default="benchmark_results.csv", help="Output CSV file path")
+
   args = parser.parse_args()
 
   exe_path = Path(args.exe)
   model_path = Path(args.model)
-
   all_rows = []
 
-  for run in range(1, NUM_RUNS + 1):
-    print(f"\n=== RUN {run} ===")
+  combinations = list(itertools.product(args.batch_sizes, args.threads, args.streams))
+  total_tasks = len(combinations) * args.runs
 
-    for batch in BATCH_SIZES:
-      output = run_benchmark(exe_path, model_path, batch, args.threads, args.streams)
-      metrics = parse_output(output, batch)
+  print(f"Total Unique Combinations: {len(combinations)}")
+  print(f"Total Benchmark Runs: {total_tasks}")
 
-      metrics["run"] = run
-      metrics["threads"] = args.threads
-      metrics["streams"] = args.streams
+  for run in range(1, args.runs + 1):
+    print(f"\n--- STARTING RUN {run}/{args.runs} ---")
 
-      all_rows.append(metrics)
+    for batch, threads, streams in combinations:
+      try:
+        output = run_benchmark(exe_path, model_path, batch, threads, streams)
+        metrics = parse_output(output, batch)
+
+        metrics.update({"run": run, "threads": threads, "streams": streams})
+
+        all_rows.append(metrics)
+      except RuntimeError as e:
+        print(f"Error during configuration (B:{batch}, T:{threads}, S:{streams}): {e}")
+        continue
 
   fieldnames = [
     "run",
@@ -109,13 +126,14 @@ def main():
     "batch_size",
     "batch_throughput_batches_per_sec",
     "time_taken_sec",
-    "avg_in_flight_batches",
     "batch_latency_avg_ms",
     "batch_latency_min_ms",
     "batch_latency_max_ms",
     "batch_latency_std_ms",
+    "avg_in_flight_measured",
+    "avg_in_flight_calculated",
+    "max_in_flight",
     "single_throughput_evals_per_sec",
-    "avg_in_flight_evals",
     "single_latency_avg_ms",
   ]
 
@@ -124,7 +142,7 @@ def main():
     writer.writeheader()
     writer.writerows(all_rows)
 
-  print(f"\n📄 Results written to: {args.output}")
+  print(f"\nAll benchmarks complete. Results written to: {args.output}")
 
 
 if __name__ == "__main__":

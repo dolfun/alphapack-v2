@@ -10,7 +10,7 @@ public:
       : m_batch_size{array_size * batch_size}, m_pool{m_batch_size * batch_pool_size} {}
 
   [[nodiscard]] auto item(this auto& self, std::size_t item_idx) noexcept {
-    return self.m_pool.span<array_size>(array_size * item_idx);
+    return self.m_pool.template span<array_size>(array_size * item_idx);
   }
 
   [[nodiscard]] auto batch(this auto& self, std::size_t batch_idx) noexcept {
