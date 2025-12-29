@@ -25,7 +25,7 @@ constexpr auto bind_ndarray(py::module_& m, const char* name) -> void {
 
 PYBIND11_MODULE(alphapack, m) {
   // Vec3i
-  using shape_type = Item::shape_type;
+  using shape_type = Item::dim_type;
   py::class_<Vec3<shape_type>>(m, "Vec3i")
     .def(py::init<shape_type, shape_type, shape_type>(), py::arg("x"), py::arg("y"), py::arg("z"))
     .def_readwrite("x", &Vec3<shape_type>::x)

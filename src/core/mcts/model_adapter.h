@@ -20,7 +20,7 @@ struct ModelAdapter {
 
   struct DecodeInfo {
     std::uint8_t K;
-    Item::shape_type item_length, item_width;
+    Item::dim_type item_length, item_width;
     bool final_state;
   };
 

@@ -91,8 +91,8 @@ auto ModelAdapter::encode(
 
   return DecodeInfo{
     .K = K,
-    .item_length = static_cast<Item::shape_type>(l),
-    .item_width = static_cast<Item::shape_type>(w),
+    .item_length = static_cast<Item::dim_type>(l),
+    .item_width = static_cast<Item::dim_type>(w),
     .final_state = curr_item.placed || !has_valid_placement
   };
 }

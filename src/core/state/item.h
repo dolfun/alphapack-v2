@@ -9,17 +9,16 @@ struct Vec3 {
 };
 
 struct Item {
-  using shape_type = std::uint8_t;
+  using dim_type = std::uint8_t;
 
-  Vec3<shape_type> shape;
+  Vec3<dim_type> shape;
   bool placed;
 
   [[nodiscard]] constexpr auto volume() const noexcept -> std::uint32_t {
-    return static_cast<std::uint32_t>(shape.x) * static_cast<std::uint32_t>(shape.y) *
-           static_cast<std::uint32_t>(shape.z);
+    return std::uint32_t{1} * shape.x * shape.y * shape.z;
   }
 
-  static constexpr Item make_item(shape_type x, shape_type y, shape_type z) {
+  static constexpr Item make_item(dim_type x, dim_type y, dim_type z) {
     return Item{.shape = {x, y, z}, .placed = false};
   }
 };
