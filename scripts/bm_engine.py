@@ -12,20 +12,21 @@ BATCH_RESULTS_RE = re.compile(
   r"\n\s*Time Taken:\s*([0-9.]+)\s+sec"
   r"\n\s*Batch Latency:\s*"
   r"\n\s*Avg:\s*([0-9.]+)\s+ms"
+  r"\n\s*Std Dev:\s*([0-9.]+)\s+ms"
   r"\n\s*Min:\s*([0-9.]+)\s+ms"
   r"\n\s*Max:\s*([0-9.]+)\s+ms"
-  r"\n\s*Std Dev:\s*([0-9.]+)\s+ms"
   r"\n\s*In-Flight Batches:\s*"
   r"\n\s*Avg\(Meas\.\):\s*([0-9.]+)"
   r"\n\s*Avg\(Calc\.\):\s*([0-9.]+)"
-  r"\n\s*Max:\s*([0-9.]+)", re.MULTILINE
+  r"\n\s*Max:\s*([0-9.]+)",
+  re.MULTILINE,
 )
 
 SINGLE_RESULTS_RE = re.compile(
   r"Results \(Single Evaluation\):\s*"
   r"\n\s*Throughput:\s*([0-9.]+)\s+evals/sec"
-  r"\n\s*Latency:\s*"
-  r"\n\s*Avg:\s*([0-9.]+)\s+ms", re.MULTILINE
+  r"\n\s*Avg Latency:\s*([0-9.]+)\s+ms",
+  re.MULTILINE,
 )
 
 
@@ -47,9 +48,9 @@ def parse_output(output: str, expected_batch_size: int):
     "batch_throughput_batches_per_sec": float(batch_match.group(2)),
     "time_taken_sec": float(batch_match.group(3)),
     "batch_latency_avg_ms": float(batch_match.group(4)),
-    "batch_latency_min_ms": float(batch_match.group(5)),
-    "batch_latency_max_ms": float(batch_match.group(6)),
-    "batch_latency_std_ms": float(batch_match.group(7)),
+    "batch_latency_std_ms": float(batch_match.group(5)),
+    "batch_latency_min_ms": float(batch_match.group(6)),
+    "batch_latency_max_ms": float(batch_match.group(7)),
     "avg_in_flight_measured": float(batch_match.group(8)),
     "avg_in_flight_calculated": float(batch_match.group(9)),
     "max_in_flight": float(batch_match.group(10)),

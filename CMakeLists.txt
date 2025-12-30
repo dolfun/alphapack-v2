@@ -11,7 +11,8 @@ target_compile_options(
   project_options
   INTERFACE $<$<CXX_COMPILER_ID:MSVC>:
             /W4
-            /WX>
+            /WX
+            /wd4324>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:
             -Wall
             -Wextra

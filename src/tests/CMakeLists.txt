@@ -1,13 +1,3 @@
-add_executable(bm_inference_engine bm_inference_engine.cc)
-target_link_libraries(
-  bm_inference_engine
-  PRIVATE project_options
-          state
-          inference
-          mcts
-)
-target_copy_torch_dll(bm_inference_engine)
-
 add_executable(unit_tests test_ndarray.cc test_state.cc)
 target_link_libraries(
   unit_tests PRIVATE project_options state Catch2::Catch2WithMain
