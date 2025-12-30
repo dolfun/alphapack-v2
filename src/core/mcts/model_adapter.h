@@ -1,4 +1,5 @@
 #pragma once
+#include <core/inference/inference_model.h>
 #include <core/state/state.h>
 
 #include <cstdint>
@@ -17,6 +18,8 @@ struct ModelAdapter {
   static constexpr std::size_t value_output_size = value_support_count;
 
   static constexpr std::size_t transform_count = 8;
+
+  static constexpr auto scalar_type = ScalarType::bfloat16;
 
   struct DecodeInfo {
     std::uint8_t K;
@@ -39,5 +42,7 @@ struct ModelAdapter {
     float& value_out
   ) noexcept -> void;
 };
+
+auto make_inference_model(std::istream&, std::size_t batch_size) -> InferenceModel;
 
 }  // namespace alpack

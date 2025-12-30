@@ -12,8 +12,9 @@ def main():
 
   output_path = sys.argv[1]
 
-  model = PolicyValueNetwork().to(device="cuda").eval()
-  model = model.to(memory_format=torch.channels_last)  # type: ignore
+  model = PolicyValueNetwork().to(
+    device="cuda", dtype=torch.bfloat16, memory_format=torch.channels_last
+  ).eval()  # type: ignore
 
   params_count = sum(p.numel() for p in model.parameters())
   print(f"Total parameters: {params_count}")

@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
     if (!file) {
       throw std::runtime_error("Failed to open model file: " + model_path);
     }
-    alpack::InferenceModel model{file};
+    auto model = alpack::make_inference_model(file, benchmark_info.batch_size);
 
     BenchmarkState benchmark{benchmark_info, std::move(model)};
     benchmark.run();
@@ -335,18 +335,9 @@ auto BenchmarkState::task() -> void {
 
 auto BenchmarkState::get_inference_info(std::size_t idx) -> alpack::InferenceInfo {
   return {
-    .image_input = m_storage.image_input.batch(idx),
-    .image_input_shape =
-      {static_cast<std::int64_t>(m_info.batch_size),
-       alpack::State::bin_length,
-       alpack::State::bin_length,
-       alpack::ModelAdapter::input_feature_count},
-    .additional_input = m_storage.additional_input.batch(idx),
-    .additional_input_shape =
-      {static_cast<std::int64_t>(m_info.batch_size), alpack::ModelAdapter::additional_input_count},
-    .policy_output = m_storage.priors_output.batch(idx),
-    .policy_output_shape = {static_cast<std::int64_t>(m_info.batch_size), alpack::State::bin_base_size},
-    .value_output = m_storage.value_output.batch(idx),
-    .value_output_shape = {static_cast<std::int64_t>(m_info.batch_size), alpack::ModelAdapter::value_support_count},
+    .image_input = m_storage.image_input.batch(idx).data(),
+    .additional_input = m_storage.additional_input.batch(idx).data(),
+    .policy_output = m_storage.priors_output.batch(idx).data(),
+    .value_output = m_storage.value_output.batch(idx).data(),
   };
 }

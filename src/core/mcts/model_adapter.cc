@@ -53,27 +53,25 @@ auto ModelAdapter::encode(
   const std::size_t l = curr_item.shape.x, w = curr_item.shape.y;
 
   const auto& height_map_in = state.height_map();
-  auto height_map_out = image_data_out.subspan<0, State::bin_base_size>();
   for (std::size_t x = 0; x < L; ++x) {
     for (std::size_t y = 0; y < L; ++y) {
       const auto [x_t, y_t] = transform<L>(K, x, y, 1, 1);
-      const auto idx_t = x_t * L + y_t;
-      height_map_out[idx_t] = static_cast<float>(height_map_in[x, y]) / State::bin_height;
+      const auto idx_t = input_feature_count * (x_t * L + y_t);
+      image_data_out[idx_t] = static_cast<float>(height_map_in[x, y]) / State::bin_height;
+      image_data_out[idx_t + 1] = 0.0f;
     }
   }
 
   const auto& feasibility_info_in = state.feasibility_info();
-  auto feasibility_mask_out = image_data_out.subspan<State::bin_base_size>();
-  std::ranges::fill(feasibility_mask_out, 0.0f);
   bool has_valid_placement = false;
   if (!curr_item.placed) [[likely]] {
     for (std::size_t x = 0; x <= L - l; ++x) {
       for (std::size_t y = 0; y <= L - w; ++y) {
         const auto [x_t, y_t] = transform<L>(K, x, y, l, w);
-        const auto idx_t = x_t * L + y_t;
+        const auto idx_t = input_feature_count * (x_t * L + y_t) + 1;
         const bool is_valid_placement = feasibility_info_in[x, y] != State::invalid_feasible_height;
         has_valid_placement |= is_valid_placement;
-        feasibility_mask_out[idx_t] = static_cast<float>(is_valid_placement);
+        image_data_out[idx_t] = static_cast<float>(is_valid_placement);
       }
     }
   }
@@ -132,6 +130,17 @@ auto ModelAdapter::decode(
   for (const auto [idx, val] : std::views::enumerate(value_data)) {
     value_out += val * static_cast<float>(idx) / (value_data.size() - 1);
   }
+}
+
+auto make_inference_model(std::istream& in, std::size_t batch_size) -> InferenceModel {
+  const ModelCreateInfo info{
+    .scalar_type = ModelAdapter::scalar_type,
+    .image_input_shape = {batch_size, State::bin_length, State::bin_length, ModelAdapter::input_feature_count},
+    .additional_input_shape = {batch_size, ModelAdapter::additional_input_count},
+    .policy_output_shape = {batch_size, State::action_count},
+    .value_output_shape = {batch_size, ModelAdapter::value_support_count}
+  };
+  return InferenceModel{in, info};
 }
 
 }  // namespace alpack

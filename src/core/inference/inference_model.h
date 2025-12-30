@@ -1,29 +1,30 @@
 #pragma once
 #include <array>
 #include <memory>
-#include <span>
 #include <string>
 
 namespace alpack {
 
+enum class ScalarType { float32, float16, bfloat16 };
+
+struct ModelCreateInfo {
+  ScalarType scalar_type{};
+  std::array<std::size_t, 4> image_input_shape{};
+  std::array<std::size_t, 2> additional_input_shape{};
+  std::array<std::size_t, 2> policy_output_shape{};
+  std::array<std::size_t, 2> value_output_shape{};
+};
+
 struct InferenceInfo {
-  std::span<float> image_input;
-  std::array<int64_t, 4> image_input_shape{};
-
-  std::span<float> additional_input;
-  std::array<int64_t, 2> additional_input_shape{};
-
-  std::span<float> policy_output;
-  std::array<int64_t, 2> policy_output_shape{};
-
-  std::span<float> value_output;
-  std::array<int64_t, 2> value_output_shape{};
+  void* image_input;
+  void* additional_input;
+  void* policy_output;
+  void* value_output;
 };
 
 class InferenceModel {
 public:
-  explicit InferenceModel(std::istream&);
-  explicit InferenceModel(const std::string&);
+  InferenceModel(std::istream&, const ModelCreateInfo&);
 
   ~InferenceModel();
 
@@ -37,6 +38,12 @@ public:
 private:
   struct Impl;
   std::unique_ptr<Impl> m_pimpl;
+
+  ScalarType m_scalar_type;
+  std::array<std::int64_t, 4> m_image_input_shape;
+  std::array<std::int64_t, 2> m_additional_input_shape{};
+  std::array<std::int64_t, 2> m_policy_output_shape{};
+  std::array<std::int64_t, 2> m_value_output_shape{};
 };
 
 }  // namespace alpack
