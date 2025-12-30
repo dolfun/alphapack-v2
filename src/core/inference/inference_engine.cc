@@ -32,8 +32,8 @@ auto InferenceEngine::run(const InferenceInfo& input, InferenceCallback& callbac
 
     m_model.infer(input);
 
-    callback.m_event.record(stream);
-    cudaStreamWaitEvent(m_notify_stream, callback.m_event);
+    callback.event.record(stream);
+    cudaStreamWaitEvent(m_notify_stream, callback.event);
     cudaLaunchHostFunc(m_notify_stream, callback.func, callback.data);
 
   } catch (const std::exception& e) {

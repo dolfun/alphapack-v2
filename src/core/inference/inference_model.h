@@ -8,16 +8,16 @@ namespace alpack {
 
 struct InferenceInfo {
   std::span<float> image_input;
-  std::array<int64_t, 4> image_input_shape;
+  std::array<int64_t, 4> image_input_shape{};
 
   std::span<float> additional_input;
-  std::array<int64_t, 2> additional_input_shape;
+  std::array<int64_t, 2> additional_input_shape{};
 
   std::span<float> policy_output;
-  std::array<int64_t, 2> policy_output_shape;
+  std::array<int64_t, 2> policy_output_shape{};
 
   std::span<float> value_output;
-  std::array<int64_t, 2> value_output_shape;
+  std::array<int64_t, 2> value_output_shape{};
 };
 
 class InferenceModel {

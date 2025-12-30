@@ -1,7 +1,6 @@
 #include "model_adapter.h"
 
 #include <algorithm>
-#include <cmath>
 #include <utility>
 
 template <std::size_t L>
@@ -125,7 +124,7 @@ auto ModelAdapter::decode(
   }
   apply_softmax(priors_out);
 
-  std::array<float, value_support_count> value_data;
+  std::array<float, value_support_count> value_data{};
   std::ranges::copy(value_data_in, value_data.begin());
   apply_softmax(std::span(value_data));
 

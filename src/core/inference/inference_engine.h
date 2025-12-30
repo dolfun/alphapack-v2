@@ -12,8 +12,7 @@ public:
 
 private:
   friend class InferenceEngine;
-
-  at::cuda::CUDAEvent m_event{cudaEventDisableTiming};
+  at::cuda::CUDAEvent event{cudaEventDisableTiming};
 };
 
 class InferenceEngine {
