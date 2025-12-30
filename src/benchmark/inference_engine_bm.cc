@@ -14,8 +14,8 @@
 #include <mutex>
 #include <print>
 #include <random>
+#include <semaphore>
 #include <string>
-#include <string_view>
 
 struct DataPool {
   DataPool(std::size_t batch_size, std::size_t batch_pool_size)
@@ -125,6 +125,7 @@ private:
 
 struct BenchmarkInfo {
   std::size_t run_size;
+  std::size_t dry_run_size;
   std::size_t batch_size;
   std::size_t batch_pool_size;
   std::size_t thread_pool_size;
@@ -149,13 +150,14 @@ public:
   }
 
   auto run() -> void {
+    dry_run();
+
     std::vector<std::jthread> threads;
     threads.reserve(m_info.thread_pool_size);
     std::generate_n(std::back_inserter(threads), m_info.thread_pool_size, [this] {
       return std::jthread{&BenchmarkState::task, this};
     });
 
-    std::println("Starting...");
     const auto benchmark_start = std::chrono::steady_clock::now();
     latch.count_down();
     while (true) {
@@ -170,13 +172,13 @@ public:
 
     std::ranges::for_each(threads, &std::jthread::join);
     const auto benchmark_end = std::chrono::steady_clock::now();
-    std::println("\nFinished.");
     m_time_taken = benchmark_end - benchmark_start;
   }
 
   auto print_stats() const noexcept -> void;
 
 private:
+  auto dry_run() -> void;
   auto task() -> void;
   auto get_inference_info(std::size_t idx) -> alpack::InferenceInfo;
 
@@ -203,7 +205,7 @@ private:
   std::latch latch;
   alignas(std::hardware_destructive_interference_size) std::atomic<std::size_t> m_start_cnt;
   alignas(std::hardware_destructive_interference_size) std::atomic<std::size_t> m_finish_cnt;
-  alignas(std::hardware_destructive_interference_size) std::byte padding{};
+  alignas(std::hardware_destructive_interference_size) [[maybe_unused]] std::byte padding{};
 
   InFlightCounter m_in_flight_counter;
   std::chrono::duration<double> m_time_taken{};
@@ -219,6 +221,7 @@ int main(int argc, char** argv) {
 
     BenchmarkInfo benchmark_info{
       .run_size = 10'000,
+      .dry_run_size = 64,
       .batch_size = argc >= 3 ? std::stoull(argv[2]) : 96,
       .batch_pool_size = 512,
       .thread_pool_size = argc >= 4 ? std::stoull(argv[3]) : 4,
@@ -289,6 +292,22 @@ auto BenchmarkState::print_stats() const noexcept -> void {
   std::println("--------------------------------");
 }
 
+auto BenchmarkState::dry_run() -> void {
+  std::binary_semaphore semaphore{0};
+  alpack::InferenceCallback cb;
+  cb.data = &semaphore;
+  cb.func = [](void* data) {
+    auto& _semaphore = *static_cast<std::binary_semaphore*>(data);
+    _semaphore.release();
+  };
+
+  const auto inference_info = get_inference_info(0);
+  for ([[maybe_unused]] auto _ : std::views::iota(0uz, m_info.dry_run_size)) {
+    m_engine.run(inference_info, cb);
+    semaphore.acquire();
+  }
+}
+
 auto BenchmarkState::task() -> void {
   try {
     latch.wait();
@@ -319,9 +338,9 @@ auto BenchmarkState::get_inference_info(std::size_t idx) -> alpack::InferenceInf
     .image_input = m_storage.image_input.batch(idx),
     .image_input_shape =
       {static_cast<std::int64_t>(m_info.batch_size),
-       alpack::ModelAdapter::input_feature_count,
        alpack::State::bin_length,
-       alpack::State::bin_length},
+       alpack::State::bin_length,
+       alpack::ModelAdapter::input_feature_count},
     .additional_input = m_storage.additional_input.batch(idx),
     .additional_input_shape =
       {static_cast<std::int64_t>(m_info.batch_size), alpack::ModelAdapter::additional_input_count},

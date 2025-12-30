@@ -6,7 +6,6 @@
 #include <torch/script.h>
 #pragma warning(pop)
 
-#include <cassert>
 #include <sstream>
 
 namespace alpack {
@@ -40,32 +39,28 @@ auto InferenceModel::infer(const InferenceInfo& info) const -> void {
   const auto options = torch::TensorOptions{}.dtype(torch::kFloat32).device(torch::kCPU).pinned_memory(true);
 
   // Copy input to CPU
-  const auto image_input_cpu = torch::from_blob(info.image_input.data(), info.image_input_shape, options);
-  assert(image_input_cpu.is_pinned());
-  auto image_input_gpu = image_input_cpu.to(torch::kCUDA, true);
+  const auto image_input_cpu =
+    torch::from_blob(info.image_input.data(), info.image_input_shape, options).permute({0, 3, 1, 2});
+  auto image_input_gpu = image_input_cpu.to(torch::kCUDA, true, false, torch::MemoryFormat::ChannelsLast);
 
   const auto additional_input_cpu =
     torch::from_blob(info.additional_input.data(), info.additional_input_shape, options);
-  assert(additional_input_cpu.is_pinned());
   auto additional_input_gpu = additional_input_cpu.to(torch::kCUDA, true);
 
   // Inference
-  assert(!m_pimpl->m_model.is_training());
   const auto output = m_pimpl->m_model.forward({image_input_gpu, additional_input_gpu});
 
   // Extract output
-  const auto output_tuple = output.toTupleRef();
+  const auto& output_tuple = output.toTupleRef();
   const auto& elements = output_tuple.elements();
   const auto policy_output_gpu = elements[0].toTensor();
   const auto value_output_gpu = elements[1].toTensor();
 
   // Copy output to CPU
   const auto policy_output_cpu = torch::from_blob(info.policy_output.data(), info.policy_output_shape, options);
-  assert(policy_output_cpu.is_pinned());
   (void)policy_output_cpu.copy_(policy_output_gpu, true);
 
   const auto value_output_cpu = torch::from_blob(info.value_output.data(), info.value_output_shape, options);
-  assert(value_output_cpu.is_pinned());
   (void)value_output_cpu.copy_(value_output_gpu, true);
 }
 
