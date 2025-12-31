@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <memory>
+#include <span>
 #include <string>
 
 namespace alpack {
@@ -16,10 +17,10 @@ struct ModelCreateInfo {
 };
 
 struct InferenceInfo {
-  void* image_input;
-  void* additional_input;
-  void* policy_output;
-  void* value_output;
+  std::span<float> image_input;
+  std::span<float> additional_input;
+  std::span<float> policy_output;
+  std::span<float> value_output;
 };
 
 class InferenceModel {

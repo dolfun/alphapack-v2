@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
     if (!file) {
       throw std::runtime_error("Failed to open model file: " + model_path);
     }
-    auto model = alpack::make_inference_model(file, benchmark_info.batch_size);
+    auto model = alpack::create_model_from_stream(file, benchmark_info.batch_size);
 
     BenchmarkState benchmark{benchmark_info, std::move(model)};
     benchmark.run();
@@ -335,9 +335,9 @@ auto BenchmarkState::task() -> void {
 
 auto BenchmarkState::get_inference_info(std::size_t idx) -> alpack::InferenceInfo {
   return {
-    .image_input = m_storage.image_input.batch(idx).data(),
-    .additional_input = m_storage.additional_input.batch(idx).data(),
-    .policy_output = m_storage.priors_output.batch(idx).data(),
-    .value_output = m_storage.value_output.batch(idx).data(),
+    .image_input = m_storage.image_input.batch(idx),
+    .additional_input = m_storage.additional_input.batch(idx),
+    .policy_output = m_storage.priors_output.batch(idx),
+    .value_output = m_storage.value_output.batch(idx),
   };
 }

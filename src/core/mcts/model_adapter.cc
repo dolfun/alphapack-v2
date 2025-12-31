@@ -132,7 +132,7 @@ auto ModelAdapter::decode(
   }
 }
 
-auto make_inference_model(std::istream& in, std::size_t batch_size) -> InferenceModel {
+auto create_model_from_stream(std::istream& in, std::size_t batch_size) -> InferenceModel {
   const ModelCreateInfo info{
     .scalar_type = ModelAdapter::scalar_type,
     .image_input_shape = {batch_size, State::bin_length, State::bin_length, ModelAdapter::input_feature_count},

@@ -43,6 +43,6 @@ struct ModelAdapter {
   ) noexcept -> void;
 };
 
-auto make_inference_model(std::istream&, std::size_t batch_size) -> InferenceModel;
+auto create_model_from_stream(std::istream& in, std::size_t batch_size) -> InferenceModel;
 
 }  // namespace alpack

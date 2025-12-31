@@ -58,10 +58,11 @@ auto InferenceModel::infer(const InferenceInfo& info) const -> void {
 
   // Copy input to CPU
   const auto image_input_cpu =
-    torch::from_blob(info.image_input, m_image_input_shape, cpu_options).permute({0, 3, 1, 2});
+    torch::from_blob(info.image_input.data(), m_image_input_shape, cpu_options).permute({0, 3, 1, 2});
   auto image_input_gpu = image_input_cpu.to(gpu_options, true, false, torch::MemoryFormat::ChannelsLast);
 
-  const auto additional_input_cpu = torch::from_blob(info.additional_input, m_additional_input_shape, cpu_options);
+  const auto additional_input_cpu =
+    torch::from_blob(info.additional_input.data(), m_additional_input_shape, cpu_options);
   auto additional_input_gpu = additional_input_cpu.to(gpu_options, true);
 
   // Inference
@@ -74,10 +75,10 @@ auto InferenceModel::infer(const InferenceInfo& info) const -> void {
   const auto value_output_gpu = elements[1].toTensor();
 
   // Copy output to CPU
-  const auto policy_output_cpu = torch::from_blob(info.policy_output, m_policy_output_shape, cpu_options);
+  const auto policy_output_cpu = torch::from_blob(info.policy_output.data(), m_policy_output_shape, cpu_options);
   (void)policy_output_cpu.copy_(policy_output_gpu, true);
 
-  const auto value_output_cpu = torch::from_blob(info.value_output, m_value_output_shape, cpu_options);
+  const auto value_output_cpu = torch::from_blob(info.value_output.data(), m_value_output_shape, cpu_options);
   (void)value_output_cpu.copy_(value_output_gpu, true);
 }
 
