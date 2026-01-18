@@ -1,4 +1,4 @@
 add_subdirectory(core)
+add_subdirectory(benchmark)
 add_subdirectory(bindings)
 add_subdirectory(tests)
-add_subdirectory(benchmark)

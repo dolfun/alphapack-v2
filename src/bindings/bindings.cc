@@ -1,3 +1,4 @@
+#include <benchmark/inference_engine_bm.h>
 #include <core/mcts/model_adapter.h>
 #include <core/state/serializer.h>
 #include <core/state/state.h>
@@ -73,4 +74,53 @@ PYBIND11_MODULE(alphapack, m) {
     .def_readonly_static("priors_output_size", &ModelAdapter::value_support_count)
     .def_readonly_static("value_output_size", &ModelAdapter::value_output_size)
     .def_readonly_static("transform_count", &ModelAdapter::transform_count);
+
+  py::class_<InferenceEngineBenchmarkResult>(m, "InferenceEngineBenchmarkResult")
+    .def_readonly("model_path", &InferenceEngineBenchmarkResult::model_path)
+    .def_readonly("run_size", &InferenceEngineBenchmarkResult::run_size)
+    .def_readonly("batch_size", &InferenceEngineBenchmarkResult::batch_size)
+    .def_readonly("thread_pool_size", &InferenceEngineBenchmarkResult::thread_pool_size)
+    .def_readonly("stream_pool_size", &InferenceEngineBenchmarkResult::stream_pool_size)
+    .def_readonly("batch_throughput_batches_per_sec", &InferenceEngineBenchmarkResult::batch_throughput_batches_per_sec)
+    .def_readonly("time_taken_sec", &InferenceEngineBenchmarkResult::time_taken_sec)
+    .def_readonly("batch_latency_avg_ms", &InferenceEngineBenchmarkResult::batch_latency_avg_ms)
+    .def_readonly("batch_latency_std_ms", &InferenceEngineBenchmarkResult::batch_latency_std_ms)
+    .def_readonly("batch_latency_min_ms", &InferenceEngineBenchmarkResult::batch_latency_min_ms)
+    .def_readonly("batch_latency_max_ms", &InferenceEngineBenchmarkResult::batch_latency_max_ms)
+    .def_readonly("avg_in_flight_measured", &InferenceEngineBenchmarkResult::avg_in_flight_measured)
+    .def_readonly("avg_in_flight_calculated", &InferenceEngineBenchmarkResult::avg_in_flight_calculated)
+    .def_readonly("max_in_flight", &InferenceEngineBenchmarkResult::max_in_flight)
+    .def_readonly("single_throughput_evals_per_sec", &InferenceEngineBenchmarkResult::single_throughput_evals_per_sec)
+    .def_readonly("single_latency_avg_ms", &InferenceEngineBenchmarkResult::single_latency_avg_ms);
+
+  m.def(
+    "benchmark_inference_engine",
+    [](
+      const std::string& model_path,
+      std::size_t run_size,
+      std::size_t dry_run_size,
+      std::size_t batch_size,
+      std::size_t batch_pool_size,
+      std::size_t thread_pool_size,
+      std::size_t stream_pool_size
+    ) {
+      InferenceEngineBenchmarkInfo info{
+        .model_path = model_path,
+        .run_size = run_size,
+        .dry_run_size = dry_run_size,
+        .batch_size = batch_size,
+        .batch_pool_size = batch_pool_size,
+        .thread_pool_size = thread_pool_size,
+        .stream_pool_size = stream_pool_size
+      };
+      return benchmark_inference_engine(info);
+    },
+    py::arg("model_path"),
+    py::arg("run_size"),
+    py::arg("dry_run_size"),
+    py::arg("batch_size"),
+    py::arg("batch_pool_size"),
+    py::arg("thread_pool_size"),
+    py::arg("stream_pool_size")
+  );
 }

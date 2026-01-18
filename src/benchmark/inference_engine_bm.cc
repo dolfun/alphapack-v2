@@ -1,3 +1,5 @@
+#include "inference_engine_bm.h"
+
 #include <core/inference/allocator.h>
 #include <core/inference/inference_engine.h>
 #include <core/mcts/model_adapter.h>
@@ -6,16 +8,22 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <exception>
-#include <format>
 #include <fstream>
-#include <iostream>
 #include <latch>
+#include <memory>
 #include <mutex>
-#include <print>
+#include <numeric>
 #include <random>
+#include <ranges>
 #include <semaphore>
-#include <string>
+#include <stdexcept>
+#include <thread>
+#include <utility>
+#include <vector>
+
+namespace alpack {
+
+namespace {
 
 struct DataPool {
   DataPool(std::size_t batch_size, std::size_t batch_pool_size)
@@ -30,12 +38,12 @@ struct DataPool {
   }
 
   template <std::size_t N>
-  using HostPool = alpack::BatchedArrayPool<float, N, alpack::CudaHostAllocator>;
+  using HostPool = BatchedArrayPool<float, N, CudaHostAllocator>;
 
-  HostPool<alpack::ModelAdapter::image_input_size> image_input;
-  HostPool<alpack::ModelAdapter::additional_input_size> additional_input;
-  HostPool<alpack::ModelAdapter::priors_output_size> priors_output;
-  HostPool<alpack::ModelAdapter::value_output_size> value_output;
+  HostPool<ModelAdapter::image_input_size> image_input;
+  HostPool<ModelAdapter::additional_input_size> additional_input;
+  HostPool<ModelAdapter::priors_output_size> priors_output;
+  HostPool<ModelAdapter::value_output_size> value_output;
 };
 
 template <typename T>
@@ -115,72 +123,28 @@ public:
   }
 
   [[nodiscard]] auto stats() const noexcept -> std::pair<double, std::size_t> {
+    if (sample_count == 0) {
+      return {0.0, 0};
+    }
     auto mean = static_cast<double>(sum) / static_cast<double>(sample_count);
-    return std::make_tuple(mean, max);
+    return {mean, max};
   }
 
 private:
   std::size_t sample_count{0}, sum{0}, max{0};
 };
 
-struct BenchmarkInfo {
-  std::size_t run_size;
-  std::size_t dry_run_size;
-  std::size_t batch_size;
-  std::size_t batch_pool_size;
-  std::size_t thread_pool_size;
-  std::size_t stream_pool_size;
-};
-
 class BenchmarkState {
 public:
-  BenchmarkState(const BenchmarkInfo& info, alpack::InferenceModel model)
-      : m_info{info},
-        m_engine{std::move(model), m_info.stream_pool_size},
-        m_storage{m_info.batch_size, m_info.batch_pool_size},
-        m_callback_pool{m_info.batch_pool_size},
-        m_run_infos(m_info.run_size),
-        latch{1},
-        m_start_cnt{0},
-        m_finish_cnt{0} {
-    std::ranges::for_each(m_run_infos, [this](auto& m_info) {
-      m_info.callback_pool = &m_callback_pool;
-      m_info.finish_cnt = &m_finish_cnt;
-    });
-  }
+  BenchmarkState(InferenceEngineBenchmarkInfo, InferenceModel);
 
-  auto run() -> void {
-    dry_run();
-
-    std::vector<std::jthread> threads;
-    threads.reserve(m_info.thread_pool_size);
-    std::generate_n(std::back_inserter(threads), m_info.thread_pool_size, [this] {
-      return std::jthread{&BenchmarkState::task, this};
-    });
-
-    const auto benchmark_start = std::chrono::steady_clock::now();
-    latch.count_down();
-    while (true) {
-      const auto progress = m_finish_cnt.load(std::memory_order_relaxed);
-      auto percentage = (static_cast<double>(progress) * 100.0) / static_cast<double>(m_info.run_size);
-      std::print("Progress: {:6.2f}%\r", percentage);
-      if (progress >= m_info.run_size) break;
-
-      m_in_flight_counter.update(m_callback_pool.in_flight_count());
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    std::ranges::for_each(threads, &std::jthread::join);
-    const auto benchmark_end = std::chrono::steady_clock::now();
-    m_time_taken = benchmark_end - benchmark_start;
-  }
-
-  auto print_stats() const noexcept -> void;
+  auto run() -> void;
+  [[nodiscard]] auto results() const -> InferenceEngineBenchmarkResult;
 
 private:
-  auto dry_run() -> void;
+  auto warmup() -> void;
   auto task() -> void;
-  auto get_inference_info(std::size_t idx) -> alpack::InferenceInfo;
+  auto get_inference_info(std::size_t idx) -> InferenceInfo;
 
   static auto callback_func(void* data) -> void {
     auto& run_info = *static_cast<RunInfo*>(data);
@@ -189,14 +153,14 @@ private:
     run_info.callback_pool->free(run_info.callback);
   }
 
-  BenchmarkInfo m_info;
-  alpack::InferenceEngine m_engine;
+  InferenceEngineBenchmarkInfo m_info;
+  InferenceEngine m_engine;
   DataPool m_storage;
-  ObjectPool<alpack::InferenceCallback> m_callback_pool;
+  ObjectPool<InferenceCallback> m_callback_pool;
 
   struct RunInfo {
-    ObjectPool<alpack::InferenceCallback>* callback_pool{};
-    alpack::InferenceCallback* callback{};
+    ObjectPool<InferenceCallback>* callback_pool{};
+    InferenceCallback* callback{};
     std::atomic<std::size_t>* finish_cnt{};
     std::chrono::steady_clock::time_point t0, t1;
   };
@@ -211,51 +175,56 @@ private:
   std::chrono::duration<double> m_time_taken{};
 };
 
-int main(int argc, char** argv) {
-  try {
-    if (argc < 2) {
-      throw std::invalid_argument("Usage: {} <model_path> [batch_size] [thread_count] [stream_count]");
-    }
+}  // namespace
 
-    std::string model_path = argv[1];
-
-    BenchmarkInfo benchmark_info{
-      .run_size = 10'000,
-      .dry_run_size = 64,
-      .batch_size = argc >= 3 ? std::stoull(argv[2]) : 96,
-      .batch_pool_size = 512,
-      .thread_pool_size = argc >= 4 ? std::stoull(argv[3]) : 4,
-      .stream_pool_size = argc >= 5 ? std::stoull(argv[4]) : 8
-    };
-
-    std::println("--- Inference Engine Benchmark ---");
-    std::println("Model: {}", model_path);
-    std::println("Batch Size: {}", benchmark_info.batch_size);
-    std::println("Threads: {}", benchmark_info.thread_pool_size);
-    std::println("Streams: {}", benchmark_info.stream_pool_size);
-    std::println("Total Evaluations: {}", benchmark_info.run_size);
-
-    std::ifstream file{model_path, std::ios::binary};
-    if (!file) {
-      throw std::runtime_error("Failed to open model file: " + model_path);
-    }
-    auto model = alpack::create_model_from_stream(file, benchmark_info.batch_size);
-
-    BenchmarkState benchmark{benchmark_info, std::move(model)};
-    benchmark.run();
-    benchmark.print_stats();
-
-  } catch (const std::exception& e) {
-    std::println(std::cerr, "Error: {}", e.what());
-    return -1;
-  }
-
-  return 0;
+BenchmarkState::BenchmarkState(InferenceEngineBenchmarkInfo info, InferenceModel model)
+    : m_info{std::move(info)},
+      m_engine{std::move(model), m_info.stream_pool_size},
+      m_storage{m_info.batch_size, m_info.batch_pool_size},
+      m_callback_pool{m_info.batch_pool_size},
+      m_run_infos(m_info.run_size),
+      latch{1},
+      m_start_cnt{0},
+      m_finish_cnt{0} {
+  std::ranges::for_each(m_run_infos, [this](auto& run_info) {
+    run_info.callback_pool = &m_callback_pool;
+    run_info.finish_cnt = &m_finish_cnt;
+  });
 }
 
-auto BenchmarkState::print_stats() const noexcept -> void {
-  double throughput = static_cast<double>(m_info.run_size) / m_time_taken.count();
-  auto [avg_lat, std_lat, min_lat, max_lat, calculated_in_flight] = [&] {
+auto BenchmarkState::run() -> void {
+  warmup();
+
+  auto threads = std::views::iota(0uz, m_info.thread_pool_size) |
+                 std::views::transform([this](auto) { return std::jthread{&BenchmarkState::task, this}; }) |
+                 std::ranges::to<std::vector>();
+
+  const auto benchmark_start = std::chrono::steady_clock::now();
+  latch.count_down();
+  while (true) {
+    const auto progress = m_finish_cnt.load(std::memory_order_relaxed);
+    if (progress >= m_info.run_size) break;
+
+    m_in_flight_counter.update(m_callback_pool.in_flight_count());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  std::ranges::for_each(threads, &std::jthread::join);
+  const auto benchmark_end = std::chrono::steady_clock::now();
+  m_time_taken = benchmark_end - benchmark_start;
+}
+
+auto BenchmarkState::results() const -> InferenceEngineBenchmarkResult {
+  const double elapsed = m_time_taken.count();
+  const double throughput =
+    (elapsed > 0.0 && m_info.run_size > 0) ? static_cast<double>(m_info.run_size) / elapsed : 0.0;
+
+  double avg_lat = 0.0;
+  double std_lat = 0.0;
+  double min_lat = 0.0;
+  double max_lat = 0.0;
+  double calculated_in_flight = 0.0;
+  if (!m_run_infos.empty()) {
     const auto latencies = m_run_infos | std::views::transform([](const RunInfo& cb) {
                              return std::chrono::duration<double, std::milli>(cb.t1 - cb.t0).count();
                            }) |
@@ -266,35 +235,38 @@ auto BenchmarkState::print_stats() const noexcept -> void {
     const double sq_sum = std::inner_product(latencies.begin(), latencies.end(), latencies.begin(), 0.0);
     const double std_dev = std::sqrt(std::max(0.0, sq_sum / size - mean * mean));
     const auto [min_it, max_it] = std::minmax_element(latencies.begin(), latencies.end());
-    const double in_flight = throughput * (mean / 1000.0);
-    return std::make_tuple(mean, std_dev, *min_it, *max_it, in_flight);
-  }();
+    avg_lat = mean;
+    std_lat = std_dev;
+    min_lat = *min_it;
+    max_lat = *max_it;
+    calculated_in_flight = throughput * (mean / 1000.0);
+  }
 
-  auto [in_flight_mean, in_flight_max] = m_in_flight_counter.stats();
+  const auto [in_flight_mean, in_flight_max] = m_in_flight_counter.stats();
 
-  std::println("--------------------------------");
-  std::println("Results (Batch Size: {}):", m_info.batch_size);
-  std::println("  Throughput:      {:.2f} batches/sec", throughput);
-  std::println("  Time Taken:      {:.2f} sec", m_time_taken.count());
-  std::println("  Batch Latency:");
-  std::println("    Avg:           {:.2f} ms", avg_lat);
-  std::println("    Std Dev:       {:.2f} ms", std_lat);
-  std::println("    Min:           {:.2f} ms", min_lat);
-  std::println("    Max:           {:.2f} ms", max_lat);
-  std::println("  In-Flight Batches:");
-  std::println("    Avg(Meas.):    {:.2f}", in_flight_mean);
-  std::println("    Avg(Calc.):    {:.2f}", calculated_in_flight);
-  std::println("    Max:           {}", in_flight_max);
-  std::println("--------------------------------");
-  std::println("Results (Single Evaluation):");
-  std::println("  Throughput:      {:.2f} evals/sec", throughput * static_cast<double>(m_info.batch_size));
-  std::println("  Avg Latency:     {:.4f} ms", avg_lat / static_cast<double>(m_info.batch_size));
-  std::println("--------------------------------");
+  return {
+    .model_path = m_info.model_path,
+    .run_size = m_info.run_size,
+    .batch_size = m_info.batch_size,
+    .thread_pool_size = m_info.thread_pool_size,
+    .stream_pool_size = m_info.stream_pool_size,
+    .batch_throughput_batches_per_sec = throughput,
+    .time_taken_sec = elapsed,
+    .batch_latency_avg_ms = avg_lat,
+    .batch_latency_std_ms = std_lat,
+    .batch_latency_min_ms = min_lat,
+    .batch_latency_max_ms = max_lat,
+    .avg_in_flight_measured = in_flight_mean,
+    .avg_in_flight_calculated = calculated_in_flight,
+    .max_in_flight = in_flight_max,
+    .single_throughput_evals_per_sec = throughput * static_cast<double>(m_info.batch_size),
+    .single_latency_avg_ms = (m_info.batch_size > 0) ? avg_lat / static_cast<double>(m_info.batch_size) : 0.0
+  };
 }
 
-auto BenchmarkState::dry_run() -> void {
+auto BenchmarkState::warmup() -> void {
   std::binary_semaphore semaphore{0};
-  alpack::InferenceCallback cb;
+  InferenceCallback cb;
   cb.data = &semaphore;
   cb.func = [](void* data) {
     auto& _semaphore = *static_cast<std::binary_semaphore*>(data);
@@ -327,13 +299,12 @@ auto BenchmarkState::task() -> void {
       run_info.t0 = std::chrono::steady_clock::now();
       m_engine.run(inference_info, cb);
     }
-  } catch (const std::exception& e) {
-    std::println(std::cerr, "Worker Error: {}", e.what());
+  } catch (...) {
     std::terminate();
   }
 }
 
-auto BenchmarkState::get_inference_info(std::size_t idx) -> alpack::InferenceInfo {
+auto BenchmarkState::get_inference_info(std::size_t idx) -> InferenceInfo {
   return {
     .image_input = m_storage.image_input.batch(idx),
     .additional_input = m_storage.additional_input.batch(idx),
@@ -341,3 +312,17 @@ auto BenchmarkState::get_inference_info(std::size_t idx) -> alpack::InferenceInf
     .value_output = m_storage.value_output.batch(idx),
   };
 }
+
+auto benchmark_inference_engine(const InferenceEngineBenchmarkInfo& info) -> InferenceEngineBenchmarkResult {
+  std::ifstream file{info.model_path, std::ios::binary};
+  if (!file) {
+    throw std::runtime_error("Failed to open model file: " + info.model_path);
+  }
+  auto model = create_model_from_stream(file, info.batch_size);
+
+  BenchmarkState benchmark{info, std::move(model)};
+  benchmark.run();
+  return benchmark.results();
+}
+
+}  // namespace alpack
