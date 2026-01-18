@@ -1,10 +1,10 @@
 add_library(
   inference
   allocator.h
-  inference_model.h
-  inference_model.cc
-  inference_engine.h
   inference_engine.cc
+  inference_engine.h
+  inference_model.cc
+  inference_model.h
 )
 
 target_link_torch(inference)

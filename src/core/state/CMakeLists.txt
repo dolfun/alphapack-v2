@@ -1,12 +1,12 @@
 add_library(
   state
-  ndarray.h
   item.h
-  state.h
-  state.cc
+  ndarray.h
   serializer.h
-  state_factory.h
+  state.cc
+  state.h
   state_factory.cc
+  state_factory.h
 )
 
 target_link_libraries(state PRIVATE project_options)
