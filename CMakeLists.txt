@@ -38,4 +38,23 @@ set_target_properties(
   project_options PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE
 )
 
+find_program(CLANG_FORMAT clang-format)
+if(CLANG_FORMAT)
+  message("Found clang-format: ${CLANG_FORMAT}")
+
+  file(
+    GLOB_RECURSE FORMAT_FILES
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    "src/*.cpp"
+    "src/*.cc"
+    "src/*.h"
+    "src/*.hpp"
+  )
+  add_custom_target(
+    format
+    COMMAND ${CLANG_FORMAT} -i -style=file ${FORMAT_FILES}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endif()
+
 add_subdirectory(src)
