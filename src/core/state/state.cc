@@ -8,8 +8,11 @@
 namespace alpack {
 
 template <typename T, std::size_t box_n, std::size_t box_m>
-constexpr auto
-get_2d_window_max_in_box(const NdArray<T, box_n, box_m>& box, std::size_t window_n, std::size_t window_m) {
+constexpr auto get_2d_window_max_in_box(
+  const NdArray<T, box_n, box_m>& box,
+  std::size_t window_n,
+  std::size_t window_m
+) {
   NdArray<T, box_n, box_m> result{};
 
   for (std::size_t x = 0; x < box_n; ++x) {
@@ -84,8 +87,9 @@ auto State::transition(Action action_idx) -> float {
   update_feasibility_info_with_front_item();
 
   constexpr auto reward_scaling = max_item_count * (max_item_count + 1) / 2;
-  const auto used_items_count =
-    std::ranges::count(m_items, true, [](const Item item) { return item.volume() > 0 && item.placed; });
+  const auto used_items_count = std::ranges::count(m_items, true, [](const Item item) {
+    return item.volume() > 0 && item.placed;
+  });
   const auto reward = static_cast<float>(used_items_count) / reward_scaling;
   return reward;
 }
@@ -96,7 +100,8 @@ auto State::update_feasibility_info_with_front_item() noexcept -> void {
   const auto front_item = m_items.front();
   if (front_item.placed) return;
 
-  auto max_height_arr = get_2d_window_max_in_box(m_height_map, front_item.shape.x, front_item.shape.y);
+  auto max_height_arr =
+    get_2d_window_max_in_box(m_height_map, front_item.shape.x, front_item.shape.y);
   for (std::size_t x = 0; x <= FeasibilityInfo::shape[0] - front_item.shape.x; ++x) {
     for (std::size_t y = 0; y <= FeasibilityInfo::shape[1] - front_item.shape.y; ++y) {
       const auto max_height = max_height_arr[x, y];

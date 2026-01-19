@@ -4,7 +4,8 @@
 #include <utility>
 
 template <std::size_t L>
-static auto transform(std::size_t K, std::size_t x, std::size_t y, std::size_t l, std::size_t w) noexcept
+static auto
+transform(std::size_t K, std::size_t x, std::size_t y, std::size_t l, std::size_t w) noexcept
   -> std::pair<std::size_t, std::size_t> {
   switch (K) {
     case 0:
@@ -137,7 +138,8 @@ auto ModelAdapter::decode(
 auto create_model_from_stream(std::istream& in, std::size_t batch_size) -> InferenceModel {
   const ModelCreateInfo info{
     .scalar_type = ModelAdapter::scalar_type,
-    .image_input_shape = {batch_size, State::bin_length, State::bin_length, ModelAdapter::input_feature_count},
+    .image_input_shape =
+      {batch_size, State::bin_length, State::bin_length, ModelAdapter::input_feature_count},
     .additional_input_shape = {batch_size, ModelAdapter::additional_input_count},
     .policy_output_shape = {batch_size, State::action_count},
     .value_output_shape = {batch_size, ModelAdapter::value_support_count}

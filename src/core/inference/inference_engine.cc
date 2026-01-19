@@ -13,7 +13,9 @@
 namespace alpack {
 
 InferenceEngine::InferenceEngine(InferenceModel model, std::size_t stream_pool_size)
-    : m_model{std::move(model)}, m_curr_stream_idx{0}, m_notify_stream{at::cuda::getStreamFromPool()} {
+    : m_model{std::move(model)},
+      m_curr_stream_idx{0},
+      m_notify_stream{at::cuda::getStreamFromPool()} {
   if (stream_pool_size == 0) {
     throw std::invalid_argument("Pool size cannot be zero.");
   }

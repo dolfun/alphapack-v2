@@ -23,7 +23,8 @@ auto make_random_sequence_state(
   }
 
   std::mt19937_64 engine{seed};
-  std::uniform_int_distribution length_dist{min_length, max_length}, height_dist{min_height, max_height};
+  std::uniform_int_distribution length_dist{min_length, max_length},
+    height_dist{min_height, max_height};
 
   std::vector<Item> items(count);
   std::ranges::generate(items, [&] {

@@ -81,16 +81,25 @@ PYBIND11_MODULE(alphapack, m) {
     .def_readonly("batch_size", &InferenceEngineBenchmarkResult::batch_size)
     .def_readonly("thread_pool_size", &InferenceEngineBenchmarkResult::thread_pool_size)
     .def_readonly("stream_pool_size", &InferenceEngineBenchmarkResult::stream_pool_size)
-    .def_readonly("batch_throughput_batches_per_sec", &InferenceEngineBenchmarkResult::batch_throughput_batches_per_sec)
+    .def_readonly(
+      "batch_throughput_batches_per_sec",
+      &InferenceEngineBenchmarkResult::batch_throughput_batches_per_sec
+    )
     .def_readonly("time_taken_sec", &InferenceEngineBenchmarkResult::time_taken_sec)
     .def_readonly("batch_latency_avg_ms", &InferenceEngineBenchmarkResult::batch_latency_avg_ms)
     .def_readonly("batch_latency_std_ms", &InferenceEngineBenchmarkResult::batch_latency_std_ms)
     .def_readonly("batch_latency_min_ms", &InferenceEngineBenchmarkResult::batch_latency_min_ms)
     .def_readonly("batch_latency_max_ms", &InferenceEngineBenchmarkResult::batch_latency_max_ms)
     .def_readonly("avg_in_flight_measured", &InferenceEngineBenchmarkResult::avg_in_flight_measured)
-    .def_readonly("avg_in_flight_calculated", &InferenceEngineBenchmarkResult::avg_in_flight_calculated)
+    .def_readonly(
+      "avg_in_flight_calculated",
+      &InferenceEngineBenchmarkResult::avg_in_flight_calculated
+    )
     .def_readonly("max_in_flight", &InferenceEngineBenchmarkResult::max_in_flight)
-    .def_readonly("single_throughput_evals_per_sec", &InferenceEngineBenchmarkResult::single_throughput_evals_per_sec)
+    .def_readonly(
+      "single_throughput_evals_per_sec",
+      &InferenceEngineBenchmarkResult::single_throughput_evals_per_sec
+    )
     .def_readonly("single_latency_avg_ms", &InferenceEngineBenchmarkResult::single_latency_avg_ms);
 
   m.def(

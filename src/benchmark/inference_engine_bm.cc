@@ -195,9 +195,10 @@ BenchmarkState::BenchmarkState(InferenceEngineBenchmarkInfo info, InferenceModel
 auto BenchmarkState::run() -> void {
   warmup();
 
-  auto threads = std::views::iota(0uz, m_info.thread_pool_size) |
-                 std::views::transform([this](auto) { return std::jthread{&BenchmarkState::task, this}; }) |
-                 std::ranges::to<std::vector>();
+  auto threads =
+    std::views::iota(0uz, m_info.thread_pool_size) |
+    std::views::transform([this](auto) { return std::jthread{&BenchmarkState::task, this}; }) |
+    std::ranges::to<std::vector>();
 
   const auto benchmark_start = std::chrono::steady_clock::now();
   latch.count_down();
@@ -225,14 +226,16 @@ auto BenchmarkState::results() const -> InferenceEngineBenchmarkResult {
   double max_lat = 0.0;
   double calculated_in_flight = 0.0;
   if (!m_run_infos.empty()) {
-    const auto latencies = m_run_infos | std::views::transform([](const RunInfo& cb) {
-                             return std::chrono::duration<double, std::milli>(cb.t1 - cb.t0).count();
-                           }) |
-                           std::ranges::to<std::vector>();
+    const auto latencies =
+      m_run_infos | std::views::transform([](const RunInfo& cb) {
+        return std::chrono::duration<double, std::milli>(cb.t1 - cb.t0).count();
+      }) |
+      std::ranges::to<std::vector>();
     const auto size = static_cast<double>(latencies.size());
     const double sum = std::accumulate(latencies.begin(), latencies.end(), 0.0);
     const double mean = sum / size;
-    const double sq_sum = std::inner_product(latencies.begin(), latencies.end(), latencies.begin(), 0.0);
+    const double sq_sum =
+      std::inner_product(latencies.begin(), latencies.end(), latencies.begin(), 0.0);
     const double std_dev = std::sqrt(std::max(0.0, sq_sum / size - mean * mean));
     const auto [min_it, max_it] = std::minmax_element(latencies.begin(), latencies.end());
     avg_lat = mean;
@@ -260,7 +263,8 @@ auto BenchmarkState::results() const -> InferenceEngineBenchmarkResult {
     .avg_in_flight_calculated = calculated_in_flight,
     .max_in_flight = in_flight_max,
     .single_throughput_evals_per_sec = throughput * static_cast<double>(m_info.batch_size),
-    .single_latency_avg_ms = (m_info.batch_size > 0) ? avg_lat / static_cast<double>(m_info.batch_size) : 0.0
+    .single_latency_avg_ms =
+      (m_info.batch_size > 0) ? avg_lat / static_cast<double>(m_info.batch_size) : 0.0
   };
 }
 
@@ -313,7 +317,8 @@ auto BenchmarkState::get_inference_info(std::size_t idx) -> InferenceInfo {
   };
 }
 
-auto benchmark_inference_engine(const InferenceEngineBenchmarkInfo& info) -> InferenceEngineBenchmarkResult {
+auto benchmark_inference_engine(const InferenceEngineBenchmarkInfo& info)
+  -> InferenceEngineBenchmarkResult {
   std::ifstream file{info.model_path, std::ios::binary};
   if (!file) {
     throw std::runtime_error("Failed to open model file: " + info.model_path);

@@ -53,13 +53,17 @@ InferenceModel& InferenceModel::operator=(InferenceModel&&) noexcept = default;
 auto InferenceModel::infer(const InferenceInfo& info) const -> void {
   c10::InferenceMode inference_mode_guard;
 
-  const auto cpu_options = torch::TensorOptions{}.dtype(torch::kFloat32).device(torch::kCPU).pinned_memory(true);
-  const auto gpu_options = torch::TensorOptions{}.dtype(to_torch_scalar_type(m_scalar_type)).device(torch::kCUDA);
+  const auto cpu_options =
+    torch::TensorOptions{}.dtype(torch::kFloat32).device(torch::kCPU).pinned_memory(true);
+  const auto gpu_options =
+    torch::TensorOptions{}.dtype(to_torch_scalar_type(m_scalar_type)).device(torch::kCUDA);
 
   // Copy input to CPU
   const auto image_input_cpu =
-    torch::from_blob(info.image_input.data(), m_image_input_shape, cpu_options).permute({0, 3, 1, 2});
-  auto image_input_gpu = image_input_cpu.to(gpu_options, true, false, torch::MemoryFormat::ChannelsLast);
+    torch::from_blob(info.image_input.data(), m_image_input_shape, cpu_options)
+      .permute({0, 3, 1, 2});
+  auto image_input_gpu =
+    image_input_cpu.to(gpu_options, true, false, torch::MemoryFormat::ChannelsLast);
 
   const auto additional_input_cpu =
     torch::from_blob(info.additional_input.data(), m_additional_input_shape, cpu_options);
@@ -75,10 +79,12 @@ auto InferenceModel::infer(const InferenceInfo& info) const -> void {
   const auto value_output_gpu = elements[1].toTensor();
 
   // Copy output to CPU
-  const auto policy_output_cpu = torch::from_blob(info.policy_output.data(), m_policy_output_shape, cpu_options);
+  const auto policy_output_cpu =
+    torch::from_blob(info.policy_output.data(), m_policy_output_shape, cpu_options);
   (void)policy_output_cpu.copy_(policy_output_gpu, true);
 
-  const auto value_output_cpu = torch::from_blob(info.value_output.data(), m_value_output_shape, cpu_options);
+  const auto value_output_cpu =
+    torch::from_blob(info.value_output.data(), m_value_output_shape, cpu_options);
   (void)value_output_cpu.copy_(value_output_gpu, true);
 }
 

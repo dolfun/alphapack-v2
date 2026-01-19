@@ -40,8 +40,10 @@ public:
   }
 
 private:
-  [[nodiscard]] auto ptr(this auto& self) noexcept
-    -> std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const Object*, Object*> {
+  [[nodiscard]] auto ptr(this auto& self) noexcept -> std::conditional_t<
+    std::is_const_v<std::remove_reference_t<decltype(self)>>,
+    const Object*,
+    Object*> {
     return self.m_ptr;
   }
 

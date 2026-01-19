@@ -32,6 +32,7 @@ struct InferenceEngineBenchmarkResult {
   double single_latency_avg_ms;
 };
 
-auto benchmark_inference_engine(const InferenceEngineBenchmarkInfo& info) -> InferenceEngineBenchmarkResult;
+auto benchmark_inference_engine(const InferenceEngineBenchmarkInfo& info)
+  -> InferenceEngineBenchmarkResult;
 
 }  // namespace alpack
