@@ -31,10 +31,12 @@ static auto transform(std::size_t K, std::size_t x, std::size_t y, std::size_t l
 template <std::size_t N>
 static auto apply_softmax(std::span<float, N> arr) noexcept -> void {
   const float max_val = std::ranges::max(arr);
-  std::ranges::for_each(arr, [max_val](float& x) { x = std::expf(x - max_val); });
-
+  float sum{};
+  std::ranges::for_each(arr, [max_val, &sum](float& x) {
+    x = std::exp(x - max_val);
+    sum += x;
+  });
   constexpr float eps = 1e-7f;
-  const float sum = std::ranges::fold_left(arr, 0.0f, std::plus<>{});
   if (sum > eps) [[likely]] {
     std::ranges::for_each(arr, [sum](float& x) { x /= sum; });
   }
