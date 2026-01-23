@@ -27,10 +27,19 @@ namespace {
 
 struct DataPool {
   DataPool(std::size_t batch_size, std::size_t batch_pool_size)
-      : image_input{batch_size, batch_pool_size},
-        additional_input{batch_size, batch_pool_size},
-        priors_output{batch_size, batch_pool_size},
-        value_output{batch_size, batch_pool_size} {
+      : image_input{BatchedArrayPoolConfig{
+          .batch_size = batch_size,
+          .batch_pool_size = batch_pool_size
+        }},
+        additional_input{
+          BatchedArrayPoolConfig{.batch_size = batch_size, .batch_pool_size = batch_pool_size}
+        },
+        priors_output{
+          BatchedArrayPoolConfig{.batch_size = batch_size, .batch_pool_size = batch_pool_size}
+        },
+        value_output{
+          BatchedArrayPoolConfig{.batch_size = batch_size, .batch_pool_size = batch_pool_size}
+        } {
     std::mt19937 gen{std::random_device{}()};
     std::uniform_real_distribution dist(-1.0f, 1.0f);
     std::ranges::generate(image_input.pool(), [&] { return dist(gen); });
@@ -47,10 +56,9 @@ struct DataPool {
 };
 
 template <typename T>
-class CircularQueue {
+class CircularQueue {  // NOLINT(clang-analyzer-optin.performance.Padding)
 public:
-  explicit CircularQueue(std::size_t capacity)
-      : m_capacity{capacity}, m_head{0}, m_tail{0}, m_buffer(m_capacity), m_size{0} {}
+  explicit CircularQueue(std::size_t capacity) : m_capacity{capacity}, m_buffer(m_capacity) {}
 
   auto push(const T& val) -> void {
     if (m_tail - m_head >= m_capacity) {
@@ -80,7 +88,9 @@ public:
   }
 
 private:
-  std::size_t m_capacity, m_head, m_tail;
+  std::size_t m_capacity;
+  std::size_t m_head{};
+  std::size_t m_tail{};
   std::vector<T> m_buffer;
   alignas(std::hardware_destructive_interference_size) std::atomic<std::size_t> m_size;
   alignas(std::hardware_destructive_interference_size) std::byte padding{};
@@ -88,19 +98,19 @@ private:
 
 template <typename T>
   requires std::is_default_constructible_v<T>
-class ObjectPool {
+class ObjectPool {  // NOLINT(clang-analyzer-optin.performance.Padding)
 public:
   explicit ObjectPool(std::size_t size) : m_pool{size}, m_queue{size} {
     std::ranges::for_each(m_pool, [this](T& obj) { m_queue.push(std::addressof(obj)); });
   }
 
   auto allocate() -> T* {
-    std::lock_guard _{m_mutex};
+    const std::scoped_lock _{m_mutex};
     return m_queue.pop();
   }
 
   auto free(T* ptr) -> void {
-    std::lock_guard _{m_mutex};
+    const std::scoped_lock _{m_mutex};
     m_queue.push(ptr);
   }
 
@@ -136,7 +146,7 @@ private:
 
 class BenchmarkState {
 public:
-  BenchmarkState(InferenceEngineBenchmarkInfo, InferenceModel);
+  BenchmarkState(InferenceEngineBenchmarkInfo info, InferenceModel model);
 
   auto run() -> void;
   [[nodiscard]] auto results() const -> InferenceEngineBenchmarkResult;
@@ -204,10 +214,14 @@ auto BenchmarkState::run() -> void {
   latch.count_down();
   while (true) {
     const auto progress = m_finish_cnt.load(std::memory_order_relaxed);
-    if (progress >= m_info.run_size) break;
+    if (progress >= m_info.run_size) {
+      break;
+    }
 
     m_in_flight_counter.update(m_callback_pool.in_flight_count());
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    constexpr auto sleep_duration = std::chrono::milliseconds(10);
+    std::this_thread::sleep_for(sleep_duration);
   }
 
   std::ranges::for_each(threads, &std::jthread::join);
@@ -236,13 +250,13 @@ auto BenchmarkState::results() const -> InferenceEngineBenchmarkResult {
     const double mean = sum / size;
     const double sq_sum =
       std::inner_product(latencies.begin(), latencies.end(), latencies.begin(), 0.0);
-    const double std_dev = std::sqrt(std::max(0.0, sq_sum / size - mean * mean));
-    const auto [min_it, max_it] = std::minmax_element(latencies.begin(), latencies.end());
+    const double std_dev = std::sqrt(std::max(0.0, (sq_sum / size) - (mean * mean)));
+    const auto [min_it, max_it] = std::ranges::minmax_element(latencies);
     avg_lat = mean;
     std_lat = std_dev;
     min_lat = *min_it;
     max_lat = *max_it;
-    calculated_in_flight = throughput * (mean / 1000.0);
+    calculated_in_flight = throughput * (mean / 1000.0);  // NOLINT
   }
 
   const auto [in_flight_mean, in_flight_max] = m_in_flight_counter.stats();

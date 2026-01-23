@@ -113,7 +113,7 @@ PYBIND11_MODULE(alphapack, m) {
       std::size_t thread_pool_size,
       std::size_t stream_pool_size
     ) {
-      InferenceEngineBenchmarkInfo info{
+      const InferenceEngineBenchmarkInfo info{
         .model_path = model_path,
         .run_size = run_size,
         .dry_run_size = dry_run_size,

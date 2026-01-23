@@ -10,10 +10,11 @@ template <Allocator Alloc = DefaultAllocator, std::size_t Alignment = alignof(st
   requires PowerOfTwo<Alignment>
 class StorageBuffer {
 public:
-  explicit StorageBuffer(std::size_t size) : m_size{size}, m_ptr{nullptr} {
+  explicit StorageBuffer(std::size_t size) : m_size{size} {
     if (m_size > 0) {
       m_ptr = do_allocate(m_size);
 
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
       if (reinterpret_cast<std::uintptr_t>(m_ptr) % Alignment != 0) {
         do_free(m_ptr);
         m_ptr = nullptr;
@@ -24,7 +25,7 @@ public:
   }
 
   ~StorageBuffer() noexcept {
-    if (m_ptr) {
+    if (m_ptr != nullptr) {
       do_free(m_ptr);
     }
   }
@@ -73,7 +74,7 @@ private:
   }
 
   std::size_t m_size;
-  void* m_ptr;
+  void* m_ptr{};
 };
 
 }  // namespace alpack

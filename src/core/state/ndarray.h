@@ -54,13 +54,14 @@ private:
   std::array<T, size> m_data{};
 
   template <std::size_t... Is>
+  // NOLINTNEXTLINE(readability-named-parameter, hicpp-named-parameter)
   static constexpr auto compute_offset(std::index_sequence<Is...>, auto... indices) -> std::size_t {
     return ((static_cast<std::size_t>(indices) * strides[Is]) + ...);
   }
 };
 
 template <typename T, std::size_t... Dimensions>
-constexpr inline auto make_ndarray(T val = {}) {
+constexpr auto make_ndarray(T val = {}) {
   NdArray<T, Dimensions...> arr{};
   arr.fill(val);
   return arr;

@@ -26,13 +26,13 @@ InferenceEngine::InferenceEngine(InferenceModel model, std::size_t stream_pool_s
   }
 }
 
-auto InferenceEngine::run(const InferenceInfo& input, InferenceCallback& callback) -> void {
+auto InferenceEngine::run(const InferenceInfo& info, InferenceCallback& callback) -> void {
   try {
     const auto idx = m_curr_stream_idx.fetch_add(1, std::memory_order_relaxed);
     const auto stream = m_worker_streams[idx % m_worker_streams.size()];
-    at::cuda::CUDAStreamGuard stream_guard{stream};
+    const at::cuda::CUDAStreamGuard stream_guard{stream};
 
-    m_model.infer(input);
+    m_model.infer(info);
 
     callback.event.record(stream);
     cudaStreamWaitEvent(m_notify_stream, callback.event);

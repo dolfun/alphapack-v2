@@ -6,27 +6,22 @@
 
 namespace alpack {
 
-auto make_random_sequence_state(
-  std::uint64_t seed,
-  std::size_t count,
-  std::uint32_t min_length,
-  std::uint32_t max_length,
-  std::uint32_t min_height,
-  std::uint32_t max_height
-) -> State {
-  if (min_length == 0 || min_length > max_length || max_length > State::bin_length) {
+auto make_random_sequence_state(const RandomSequenceStateInfo& info) -> State {
+  if (info.min_length == 0 || info.min_length > info.max_length ||
+      info.max_length > State::bin_length) {
     throw std::invalid_argument("Invalid length limits");
   }
 
-  if (min_height == 0 || min_height > max_height || max_height > State::bin_height) {
+  if (info.min_height == 0 || info.min_height > info.max_height ||
+      info.max_height > State::bin_height) {
     throw std::invalid_argument("Invalid height limits");
   }
 
-  std::mt19937_64 engine{seed};
-  std::uniform_int_distribution length_dist{min_length, max_length},
-    height_dist{min_height, max_height};
+  std::mt19937_64 engine{info.seed};
+  std::uniform_int_distribution length_dist{info.min_length, info.max_length};
+  std::uniform_int_distribution height_dist{info.min_height, info.max_height};
 
-  std::vector<Item> items(count);
+  std::vector<Item> items(info.count);
   std::ranges::generate(items, [&] {
     const auto l = static_cast<Item::dim_type>(length_dist(engine));
     const auto w = static_cast<Item::dim_type>(length_dist(engine));

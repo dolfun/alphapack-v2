@@ -1,28 +1,36 @@
 #include "model_adapter.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <utility>
 
+namespace alpack {
+
 template <std::size_t L>
-static auto
-transform(std::size_t K, std::size_t x, std::size_t y, std::size_t l, std::size_t w) noexcept
-  -> std::pair<std::size_t, std::size_t> {
+static auto transform(
+  ModelAdapter::Transform K,
+  std::size_t x,
+  std::size_t y,
+  std::size_t l,
+  std::size_t w
+) noexcept -> std::pair<std::size_t, std::size_t> {
+  using enum ModelAdapter::Transform;
   switch (K) {
-    case 0:
+    case Identity:
       return {x, y};
-    case 1:
+    case Rotate90:
       return {L - y - w, x};
-    case 2:
+    case Rotate180:
       return {L - x - l, L - y - w};
-    case 3:
+    case Rotate270:
       return {y, L - x - l};
-    case 4:
+    case FlipHorizontal:
       return {L - x - l, y};
-    case 5:
+    case FlipAntiDiagonal:
       return {L - y - w, L - x - l};
-    case 6:
+    case FlipVertical:
       return {x, L - y - w};
-    case 7:
+    case FlipMainDiagonal:
       return {y, x};
     default:
       std::unreachable();
@@ -43,17 +51,16 @@ static auto apply_softmax(std::span<float, N> arr) noexcept -> void {
   }
 }
 
-namespace alpack {
-
 auto ModelAdapter::encode(
   const State& state,
-  std::uint8_t K,
+  Transform K,
   std::span<float, image_input_size> image_data_out,
   std::span<float, additional_input_size> additional_data_out
 ) noexcept -> DecodeInfo {
   constexpr auto L = State::bin_length;
   const auto curr_item = state.items().front();
-  const std::size_t l = curr_item.shape.x, w = curr_item.shape.y;
+  const std::size_t l = curr_item.shape.x;
+  const std::size_t w = curr_item.shape.y;
 
   const auto& height_map_in = state.height_map();
   for (std::size_t x = 0; x < L; ++x) {
@@ -71,7 +78,7 @@ auto ModelAdapter::encode(
     for (std::size_t x = 0; x <= L - l; ++x) {
       for (std::size_t y = 0; y <= L - w; ++y) {
         const auto [x_t, y_t] = transform<L>(K, x, y, l, w);
-        const auto idx_t = input_feature_count * (x_t * L + y_t) + 1;
+        const auto idx_t = (input_feature_count * (x_t * L + y_t)) + 1;
         const bool is_valid_placement = feasibility_info_in[x, y] != State::invalid_feasible_height;
         has_valid_placement |= is_valid_placement;
         image_data_out[idx_t] = static_cast<float>(is_valid_placement);
@@ -79,7 +86,7 @@ auto ModelAdapter::encode(
     }
   }
 
-  const bool to_flip = K & 1;
+  const bool to_flip = std::to_underlying(K) % 2 == 1;
   auto it = additional_data_out.begin();
   for (auto [shape, is_placed] : state.items()) {
     it[0] = static_cast<float>(to_flip ? shape.y : shape.x) / State::bin_length;
@@ -118,8 +125,8 @@ auto ModelAdapter::decode(
   for (std::size_t x = 0; x <= L - l; ++x) {
     for (std::size_t y = 0; y <= L - w; ++y) {
       const auto [x_t, y_t] = transform<L>(K, x, y, l, w);
-      const auto idx = x * L + y;
-      const auto idx_t = x_t * L + y_t;
+      const auto idx = (x * L) + y;
+      const auto idx_t = (x_t * L) + y_t;
       priors_out[idx] = priors_data_in[idx_t];
     }
   }

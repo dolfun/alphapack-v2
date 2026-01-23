@@ -19,7 +19,7 @@ struct Item {
   }
 
   static constexpr Item make_item(dim_type x, dim_type y, dim_type z) {
-    return Item{.shape = {x, y, z}, .placed = false};
+    return Item{.shape = {.x = x, .y = y, .z = z}, .placed = false};
   }
 };
 

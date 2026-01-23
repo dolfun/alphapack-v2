@@ -51,7 +51,7 @@ InferenceModel::InferenceModel(InferenceModel&&) noexcept = default;
 InferenceModel& InferenceModel::operator=(InferenceModel&&) noexcept = default;
 
 auto InferenceModel::infer(const InferenceInfo& info) const -> void {
-  c10::InferenceMode inference_mode_guard;
+  const c10::InferenceMode inference_mode_guard;
 
   const auto cpu_options =
     torch::TensorOptions{}.dtype(torch::kFloat32).device(torch::kCPU).pinned_memory(true);

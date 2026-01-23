@@ -12,19 +12,19 @@ namespace detail {
 using CudaAllocateFn = cudaError_t (*)(void**, std::size_t);
 using CudaFreeFn = cudaError_t (*)(void*);
 
-template <CudaAllocateFn cuda_allocate, CudaFreeFn cuda_free>
+template <CudaAllocateFn CudaAllocate, CudaFreeFn CudaFree>
 struct CudaAllocator {
-  static auto allocate(std::size_t size, std::align_val_t) -> void* {
-    void* ptr = nullptr;
-    const auto error = cuda_allocate(&ptr, size);
+  static auto allocate(std::size_t size, [[maybe_unused]] std::align_val_t alignment) -> void* {
+    void* ptr = nullptr;  // NOLINT(misc-const-correctness)
+    const auto error = CudaAllocate(&ptr, size);
     if (error != cudaSuccess) {
       throw std::bad_alloc();
     }
     return ptr;
   }
 
-  static auto free(void* ptr, std::align_val_t) noexcept -> void {
-    cuda_free(ptr);  // may fail
+  static auto free(void* ptr, [[maybe_unused]] std::align_val_t alignment) noexcept -> void {
+    CudaFree(ptr);  // may fail
   }
 };
 

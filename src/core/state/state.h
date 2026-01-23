@@ -44,7 +44,7 @@ public:
   static_assert(action_count < std::numeric_limits<Action>::max());
 
   template <RangeOf<Item> ItemRange>
-  explicit State(const ItemRange&);
+  explicit State(const ItemRange& items);
 
   [[nodiscard]] auto items() const noexcept -> const Items&;
   [[nodiscard]] auto height_map() const noexcept -> const HeightMap&;
@@ -52,9 +52,9 @@ public:
 
   [[nodiscard]] auto feasibility_mask() const noexcept -> FeasibilityMask;
   [[nodiscard]] auto packing_efficiency() const noexcept -> float;
-  [[nodiscard]] auto feasible_actions() const noexcept -> std::vector<Action>;
+  [[nodiscard]] auto feasible_actions() const -> std::vector<Action>;
 
-  [[nodiscard]] auto transition(Action) -> float;
+  [[nodiscard]] auto transition(Action action) -> float;
 
 private:
   State() = default;
@@ -63,8 +63,8 @@ private:
   auto update_feasibility_info_with_front_item() noexcept -> void;
 
   Items m_items{};
-  HeightMap m_height_map{};
-  FeasibilityInfo m_feasibility_info{};
+  HeightMap m_height_map;
+  FeasibilityInfo m_feasibility_info;
 };
 
 template <RangeOf<Item> ItemRange>

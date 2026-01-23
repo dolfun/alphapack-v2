@@ -8,6 +8,8 @@
 
 using namespace alpack;
 
+// NOLINTBEGIN
+
 TEST_CASE("State: Initialization and Validation", "[State][Init]") {
   SECTION("Constructs with valid items") {
     std::vector<Item> items = {Item::make_item(2, 2, 2)};
@@ -275,3 +277,5 @@ TEST_CASE("State: Serialization Round-Trip", "[State][Serializer]") {
     REQUIRE(b1.size() == b1_mod.size());
   }
 }
+
+// NOLINTEND

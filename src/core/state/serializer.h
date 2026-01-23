@@ -1,6 +1,7 @@
 #pragma once
 #include <core/state/state.h>
 
+#include <array>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -14,10 +15,10 @@ template <>
 class Serializer<State> {
 public:
   static auto serialize(const State& state) -> std::string {
-    std::pair<const void*, std::size_t> buffer_infos[3] = {
-      {state.m_items.data(), sizeof(Item) * state.m_items.size()},
-      {state.m_height_map.data(), state.m_height_map.nbytes},
-      {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}
+    const std::array<std::pair<const void*, std::size_t>, 3> buffer_infos = {
+      {{state.m_items.data(), sizeof(Item) * state.m_items.size()},
+       {state.m_height_map.data(), state.m_height_map.nbytes},
+       {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}}
     };
 
     std::size_t total_size = 0;
@@ -37,10 +38,10 @@ public:
 
   static auto unserialize(std::string_view bytes) -> State {
     State state{};
-    std::pair<void*, std::size_t> buffer_infos[3] = {
-      {state.m_items.data(), sizeof(Item) * state.m_items.size()},
-      {state.m_height_map.data(), state.m_height_map.nbytes},
-      {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}
+    const std::array<std::pair<void*, std::size_t>, 3> buffer_infos = {
+      {{state.m_items.data(), sizeof(Item) * state.m_items.size()},
+       {state.m_height_map.data(), state.m_height_map.nbytes},
+       {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}}
     };
 
     std::size_t offset = 0;

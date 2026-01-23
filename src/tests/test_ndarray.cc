@@ -7,6 +7,8 @@
 
 using namespace alpack;
 
+// NOLINTBEGIN
+
 TEST_CASE("NdArray: Compile-time properties", "[NdArray][Static]") {
   SECTION("1D Array properties") {
     using Array1D = NdArray<int, 5>;
@@ -139,3 +141,5 @@ TEST_CASE("NdArray: Iterators", "[NdArray][Iterators]") {
     REQUIRE(sum == 4);
   }
 }
+
+// NOLINTEND

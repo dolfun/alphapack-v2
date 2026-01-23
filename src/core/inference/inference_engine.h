@@ -19,7 +19,7 @@ class InferenceEngine {
 public:
   InferenceEngine(InferenceModel model, std::size_t stream_pool_size);
 
-  auto run(const InferenceInfo&, InferenceCallback&) -> void;
+  auto run(const InferenceInfo& info, InferenceCallback& callback) -> void;
 
 private:
   InferenceModel m_model;

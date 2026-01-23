@@ -2,11 +2,10 @@
 #include <array>
 #include <memory>
 #include <span>
-#include <string>
 
 namespace alpack {
 
-enum class ScalarType { float32, float16, bfloat16 };
+enum class ScalarType : std::uint8_t { float32, float16, bfloat16 };
 
 struct ModelCreateInfo {
   ScalarType scalar_type{};
@@ -25,7 +24,7 @@ struct InferenceInfo {
 
 class InferenceModel {
 public:
-  InferenceModel(std::istream&, const ModelCreateInfo&);
+  InferenceModel(std::istream& in, const ModelCreateInfo& info);
 
   ~InferenceModel();
 
@@ -34,7 +33,7 @@ public:
   InferenceModel(InferenceModel&&) noexcept;
   InferenceModel& operator=(InferenceModel&&) noexcept;
 
-  auto infer(const InferenceInfo&) const -> void;
+  auto infer(const InferenceInfo& info) const -> void;
 
 private:
   struct Impl;

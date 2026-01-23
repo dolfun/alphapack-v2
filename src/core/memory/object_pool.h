@@ -2,6 +2,7 @@
 #include <core/memory/allocator.h>
 #include <core/memory/storage_buffer.h>
 
+#include <span>
 #include <type_traits>
 
 namespace alpack {
@@ -11,7 +12,7 @@ template <typename Object, Allocator Alloc = DefaultAllocator>
 class ObjectPool {
 public:
   explicit ObjectPool(std::size_t size) : m_size{size}, m_storage{m_size * sizeof(Object)} {
-    m_ptr = new (m_storage.ptr()) Object[m_size];
+    m_ptr = new (m_storage.ptr()) Object[m_size];  // NOLINT
   }
 
   [[nodiscard]] auto size() const noexcept -> std::size_t {

@@ -21,15 +21,26 @@ struct ModelAdapter {
 
   static constexpr auto scalar_type = ScalarType::bfloat16;
 
+  enum class Transform : std::uint8_t {
+    Identity = 0,
+    Rotate90 = 1,
+    Rotate180 = 2,
+    Rotate270 = 3,
+    FlipHorizontal = 4,
+    FlipAntiDiagonal = 5,
+    FlipVertical = 6,
+    FlipMainDiagonal = 7
+  };
+
   struct DecodeInfo {
-    std::uint8_t K;
+    Transform K;
     Item::dim_type item_length, item_width;
     bool final_state;
   };
 
   static auto encode(
     const State& state,
-    std::uint8_t K,
+    Transform K,
     std::span<float, image_input_size> image_data_out,
     std::span<float, additional_input_size> additional_data_out
   ) noexcept -> DecodeInfo;
