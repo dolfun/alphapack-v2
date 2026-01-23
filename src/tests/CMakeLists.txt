@@ -1,7 +1,6 @@
 add_executable(unit_tests test_ndarray.cc test_state.cc)
-target_link_libraries(
-  unit_tests PRIVATE project_options state Catch2::Catch2WithMain
-)
+target_link_libraries(unit_tests PRIVATE state Catch2::Catch2WithMain)
+enable_project_options(unit_tests NOLINT)
 
 include(CTest)
 include(Catch)

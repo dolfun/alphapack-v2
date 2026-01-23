@@ -8,5 +8,4 @@ add_library(
   state_factory.cc
   state_factory.h
 )
-
-target_link_libraries(state PRIVATE project_options)
+enable_project_options(state)

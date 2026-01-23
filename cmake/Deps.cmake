@@ -19,7 +19,6 @@ find_package(
 if(DEFINED TORCH_PATH AND TORCH_PATH)
   message(STATUS "TORCH_PATH specified: ${TORCH_PATH}")
   list(APPEND CMAKE_PREFIX_PATH "${TORCH_PATH}")
-
 else()
   execute_process(
     COMMAND "${Python_EXECUTABLE}" -c
