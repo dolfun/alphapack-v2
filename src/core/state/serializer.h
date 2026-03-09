@@ -21,11 +21,7 @@ public:
        {state.m_feasibility_info.data(), state.m_feasibility_info.nbytes}}
     };
 
-    std::size_t total_size = 0;
-    for (const auto size : buffer_infos | std::views::values) {
-      total_size += size;
-    }
-
+    auto total_size = std::ranges::fold_left(buffer_infos | std::views::values, 0uz, std::plus<>());
     std::size_t offset = 0;
     std::string bytes(total_size, ' ');
     for (auto [src, size] : buffer_infos) {

@@ -68,15 +68,15 @@ auto State::feasible_actions() const -> std::vector<Action> {
   return actions;
 }
 
-auto State::transition(Action action_idx) -> float {
+auto State::transition(Action action) -> float {
   std::ranges::rotate(m_items, m_items.begin() + 1);
   Item& selected_item = m_items.back();
   selected_item.placed = true;
 
-  const auto x0 = action_idx / bin_length;
-  const auto y0 = action_idx % bin_length;
+  const auto x0 = action / bin_length;
+  const auto y0 = action % bin_length;
   const auto base_height = m_feasibility_info[x0, y0];
-  if (action_idx >= action_count || base_height == invalid_feasible_height) {
+  if (action >= action_count || base_height == invalid_feasible_height) {
     throw std::runtime_error("Invalid Action");
   }
 

@@ -1,3 +1,4 @@
+// cppcheck-suppress-file functionStatic
 #pragma once
 #include <core/memory/allocator.h>
 #include <core/memory/storage_buffer.h>
@@ -12,6 +13,7 @@ template <typename Object, Allocator Alloc = DefaultAllocator>
 class ObjectPool {
 public:
   explicit ObjectPool(std::size_t size) : m_size{size}, m_storage{m_size * sizeof(Object)} {
+    // cppcheck-suppress *
     m_ptr = new (m_storage.ptr()) Object[m_size];  // NOLINT
   }
 
@@ -41,6 +43,7 @@ public:
   }
 
 private:
+  // cppcheck-suppress constParameterReference
   [[nodiscard]] auto ptr(this auto& self) noexcept -> std::conditional_t<
     std::is_const_v<std::remove_reference_t<decltype(self)>>,
     const Object*,

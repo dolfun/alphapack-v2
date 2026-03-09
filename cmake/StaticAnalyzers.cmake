@@ -1,3 +1,4 @@
+# clang-tidy
 find_program(CLANG_TIDY NAMES clang-tidy REQUIRED)
 message(STATUS "Found clang-tidy: ${CLANG_TIDY}")
 set(CLANG_TIDY_OPTIONS
@@ -9,6 +10,31 @@ if(MSVC)
   list(APPEND CLANG_TIDY_OPTIONS --extra-arg=/EHsc)
 endif()
 
+# cppcheck
+find_program(CPPCHECK NAMES cppcheck REQUIRED)
+message(STATUS "Found cppcheck: ${CPPCHECK}")
+if(CMAKE_GENERATOR MATCHES ".*Visual Studio.*")
+  set(CPPCHECK_TEMPLATE "vs")
+else()
+  set(CPPCHECK_TEMPLATE "gcc")
+endif()
+set(CPPCHECK_OPTIONS
+    ${CPPCHECK}
+    --template=${CPPCHECK_TEMPLATE}
+    --enable=style,performance,warning,portability
+    --inline-suppr
+    --suppress=cppcheckError
+    --suppress=internalAstError
+    --suppress=unmatchedSuppression
+    --suppress=passedByValue
+    --suppress=syntaxError
+    --suppress=preprocessorErrorDirective
+    --suppress=knownConditionTrueFalse
+    --inconclusive
+    --error-exitcode=2
+)
+
+# clang-format
 find_program(CLANG_FORMAT NAMES clang-format REQUIRED)
 message(STATUS "Found clang-format: ${CLANG_FORMAT}")
 add_custom_target(format)
@@ -31,6 +57,10 @@ function(enable_project_options target)
   if(NOT ARG_NOLINT AND NOT TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
     set_target_properties(
       ${target} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_OPTIONS}"
+    )
+
+    set_target_properties(
+      ${target} PROPERTIES CXX_CPPCHECK "${CPPCHECK_OPTIONS}"
     )
   endif()
 

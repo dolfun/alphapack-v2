@@ -1,3 +1,4 @@
+// cppcheck-suppress-file functionStatic
 #pragma once
 #include <array>
 #include <type_traits>
@@ -28,6 +29,7 @@ public:
 
   template <typename... Indices>
     requires(sizeof...(Indices) == ndim && (std::is_integral_v<Indices> && ...))
+  // cppcheck-suppress functionConst
   [[nodiscard]] constexpr auto operator[](this auto&& self, Indices... indices) noexcept
     -> decltype(auto) {
     const auto offset = compute_offset(std::make_index_sequence<ndim>{}, indices...);

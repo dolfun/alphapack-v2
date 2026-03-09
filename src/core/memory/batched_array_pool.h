@@ -1,3 +1,4 @@
+// cppcheck-suppress-file functionStatic
 #pragma once
 #include <core/memory/object_pool.h>
 
@@ -23,6 +24,7 @@ public:
     return self.m_pool.span(self.m_batch_size * batch_idx, self.m_batch_size);
   }
 
+  // cppcheck-suppress constParameterReference
   [[nodiscard]] auto pool(this auto& self) noexcept -> auto& {
     return self.m_pool;
   }
